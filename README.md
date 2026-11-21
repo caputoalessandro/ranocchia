@@ -17,7 +17,7 @@ Funziona nel browser, si installa sulla schermata Home e funziona anche offline.
 ## Pubblicare un aggiornamento
 
 1. Sostituisci `index.html` (e gli altri file cambiati) con la nuova versione: Add file → Upload files → Commit.
-2. In `sw.js` cambia `VERSION` (per esempio da `ranocchia-v3` a `ranocchia-v4`), così i telefoni scaricano la versione nuova.
+2. In `sw.js` cambia `VERSION` (per esempio da `ranocchia-v4` a `ranocchia-v5`), così i telefoni scaricano la versione nuova.
 3. GitHub Pages aggiorna il sito in un paio di minuti: riapri l'app con la connessione attiva.
 
 I dati restano salvati nel browser di ogni dispositivo e non vengono toccati dagli aggiornamenti.

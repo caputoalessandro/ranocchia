@@ -274,10 +274,15 @@ textarea.in{min-height:110px;resize:vertical}
 .quote{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.3}
 .big-xp{font-family:var(--f-display);font-weight:800;font-size:44px;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
 
+.ifthen{display:grid;gap:2px;font-size:18px;line-height:1.35;margin:0}
+.ifthen .label{display:block}
+.ifthen.then{margin-top:10px;font-family:var(--f-display);font-weight:700;font-size:20px}
+.lesson .small,.lesson-now .small{margin-top:8px}
+.lesson-now{border-style:dashed}
 /* barra delle sezioni */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--deep);border:3px solid var(--ink);border-bottom:0;border-radius:26px 26px 0 0;
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;background:var(--deep);border:3px solid var(--ink);border-bottom:0;border-radius:26px 26px 0 0;
   padding:8px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;background:none;border:2.5px solid transparent;border-radius:18px;padding:4px 2px;font-size:12.5px;font-weight:700;color:#fff;max-width:150px;width:100%;justify-self:center}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;background:none;border:2.5px solid transparent;border-radius:18px;padding:4px 0;font-size:12px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:-.01em;max-width:150px;width:100%;justify-self:center}
 .tab svg{width:24px;height:24px}
 .tab.on{color:var(--ink);background:var(--accent);border-color:var(--ink);box-shadow:0 3px 0 #000}
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;max-width:min(92vw,480px);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-weight:700;opacity:0;pointer-events:none;transition:opacity var(--t-mid)}
@@ -725,7 +730,7 @@ const app = document.getElementById("app");
 function fresh(){ return {
   lang:"en", intro:false, cats:["cor","men","soc","dis","cre","gen"], diff:"auto", levels:[1,2], lvl:1, together:true,
   remind:"18:30", notif:false, notified:null, days:{}, custom:[], acc:[], wear:null, badges:{},
-  theme:null, themeOffer:null, recapSeen:null, lastSeen:null, best:0
+  theme:null, themeOffer:null, recapSeen:null, lastSeen:null, best:0, lessons:[], lessonSeen:{}
 }; }
 function load(){ try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(fresh(), JSON.parse(r)); }catch(e){} return fresh(); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
@@ -759,7 +764,8 @@ const TXT = {
       all6:["Giro dello stagno","Una sfida in ogni categoria"], brave:["Primo coraggio","Completa una sfida Coraggio"], brave10:["Cuor di rana","10 sfide Coraggio"],
       notes10:["Penna d'oro","Scrivi 10 note nel diario"], with5:["In compagnia","5 sfide insieme a qualcuno"], maker:["Inventore di sfide","Aggiungi una sfida tua"],
       d25:["Venticinque salti","25 sfide completate"], d100:["Cento salti","100 sfide completate"], comeback:["Nuovo inizio","Riparti dopo una pausa di 3 giorni"],
-      theme:["Tema riuscito","4 sfide nella settimana a tema"], extra:["Bis!","Fai due sfide nello stesso giorno"]},
+      theme:["Tema riuscito","4 sfide nella settimana a tema"], extra:["Bis!","Fai due sfide nello stesso giorno"],
+      learned:["Lezione imparata","Archivia una lezione imparata"], handled5:["Ce la faccio","Gestisci 5 volte una lezione"]},
     wd:["L","M","M","G","V","S","D"]
   },
   en:{
@@ -784,7 +790,8 @@ const TXT = {
       all6:["Round the pond","One challenge in every category"], brave:["First courage","Complete a Brave challenge"], brave10:["Frog heart","10 Brave challenges"],
       notes10:["Golden pen","Write 10 diary notes"], with5:["In good company","5 challenges with someone"], maker:["Challenge maker","Add a challenge of your own"],
       d25:["Twenty-five hops","25 challenges completed"], d100:["A hundred hops","100 challenges completed"], comeback:["Fresh start","Start again after a 3-day break"],
-      theme:["Theme done","4 challenges in a theme week"], extra:["Encore!","Do two challenges on the same day"]},
+      theme:["Theme done","4 challenges in a theme week"], extra:["Encore!","Do two challenges on the same day"],
+      learned:["Lesson learned","Archive a lesson you've learned"], handled5:["I've got this","Handle a lesson 5 times"]},
     wd:["M","T","W","T","F","S","S"]
   }
 };
@@ -920,7 +927,9 @@ const BADGES = [
   {id:"d25",     icon:"star",   ok:(x) => x.done >= 25},
   {id:"d100",    icon:"star",   ok:(x) => x.done >= 100},
   {id:"comeback",icon:"sun",    ok:(x) => x.comeback},
-  {id:"theme",   icon:"cal",    ok:(x) => x.theme}
+  {id:"theme",   icon:"cal",    ok:(x) => x.theme},
+  {id:"handled5",icon:"shield", ok:(x) => x.handled >= 5},
+  {id:"learned", icon:"leaf",   ok:(x) => x.learned}
 ];
 const bName = (b) => X("badges")[b.id][0], bHow = (b) => X("badges")[b.id][1];
 function facts(){
@@ -932,7 +941,8 @@ function facts(){
   return {done:rs.length, streak:Math.max(streak().n, S.best || 0), cats:new Set(rs.map(r => r.c)).size,
     brave:rs.filter(r => r.l === 3).length, notes:rs.filter(r => r.note).length,
     with:rs.filter(r => chOf(r).i).length, custom:(S.custom || []).length, comeback, theme,
-    extra:ds.some(k => recsOf(k).filter(r => r.st === "done").length >= 2)};
+    extra:ds.some(k => recsOf(k).filter(r => r.st === "done").length >= 2),
+    handled:(S.lessons || []).reduce((a, l) => a + (l.wins || []).length, 0), learned:(S.lessons || []).some(l => l.archived)};
 }
 function checkBadges(){
   const f = facts(), got = [];
@@ -1074,7 +1084,7 @@ function applyLook(){
 }
 
 /* ---------- navigazione: il gesto "indietro" del telefono segue le schermate ---------- */
-const DEPTH = {home:0, plan:1, reflect:1, yay:1, diary:1, progress:1, settings:1, recap:2, mine:2};
+const DEPTH = {home:0, plan:1, reflect:1, yay:1, diary:1, progress:1, settings:1, lessons:1, recap:2, mine:2, lesson:2};
 let curDepth = 0, fromPop = false, skipPop = null;
 function screen(st){
   if(fromPop) return;
@@ -1096,6 +1106,8 @@ function showState(st){
   else if(st.s === "settings") settings();
   else if(st.s === "recap") recap();
   else if(st.s === "mine") mine();
+  else if(st.s === "lessons") lessons();
+  else if(st.s === "lesson") lessonEdit(st.id || undefined);
   else home();
 }
 window.addEventListener("popstate", (e) => {
@@ -1121,7 +1133,7 @@ function mount(v, focus){
   if(focus !== false){ try{ app.focus({preventScroll:true}); }catch(e){} }
 }
 function tabBar(active){
-  const tabs = [["home",tr("Oggi","Today"),ICON.card,home],["diary",tr("Diario","Diary"),ICON.book,() => diary()],["progress",tr("Progressi","Progress"),ICON.chart,progress],["settings",tr("Impostazioni","Settings"),ICON.gear,() => settings()]];
+  const tabs = [["home",tr("Oggi","Today"),ICON.card,home],["diary",tr("Diario","Diary"),ICON.book,() => diary()],["lessons",tr("Lezioni","Lessons"),ICON.leaf,() => lessons()],["progress",tr("Progressi","Progress"),ICON.chart,progress],["settings",tr("Impostazioni","Settings"),ICON.gear,() => settings()]];
   const bar = $(`<nav class="tabbar" aria-label="${tr("Sezioni","Sections")}">${tabs.map(([id, l, ic]) => `<button class="tab ${id === active ? "on" : ""}" data-t="${id}" ${id === active ? 'aria-current="page"' : ""}>${ic}<span>${l}</span></button>`).join("")}</nav>`);
   bar.querySelectorAll(".tab").forEach(b => b.onclick = () => { if(b.dataset.t !== active) tabs.find(t => t[0] === b.dataset.t)[3](); else window.scrollTo({top:0, behavior:reduced() ? "auto" : "smooth"}); });
   return bar;
@@ -1220,9 +1232,11 @@ function home(){
       <p>${tr(`${pl(week, "sfida fatta", "sfide fatte")} negli ultimi 7 giorni. Rivediamo insieme i momenti migliori?`, `${pl(week, "", "", "challenge done", "challenges done")} in the last 7 days. Shall we look back at the best moments?`)}</p>
       <div class="acts"><button class="btn btn-ghost" id="recap">${ICON.star}${tr("Apri il riepilogo","Open the recap")}</button></div>
     </div>` : ""}
+    ${lessonNowCard()}
     <p class="foot">${ICON.eye}<span>${tr("Le tue sfide sono private: restano solo su questo telefono, nessuno le vede.","Your challenges are private: they stay on this phone and nobody else sees them.")}</span></p>
   </div>`);
   renderCard(v.querySelector("#card"), r, c, doneToday);
+  bindLessonNow(v);
   v.querySelectorAll("[data-th]").forEach(b => b.onclick = () => {
     S.theme = {c:b.dataset.th, from:t, to:addDays(t, 6)}; S.themeOffer = t;
     // la sfida di oggi resta quella pescata: il tema vale da domani se l'hai già girata
@@ -1491,7 +1505,8 @@ function recap(){
     <div class="kpis"><div class="kpi"><b>${list.length}</b><span>${tr("sfide fatte","challenges done")}</span></div><div class="kpi"><b>${xp}</b><span>${tr("XP guadagnati","XP earned")}</span></div></div>
     ${list.length ? `<div class="card"><h3>${tr("Da ricordare","Worth remembering")}</h3>${best.map(({k, r}) =>
       `<article class="entry"><div class="eh"><span class="label">${esc(fmtDay(k, {weekday:"long", day:"numeric"}))}</span>${r.mood ? `<span class="mface">${faceSvg(r.mood)}${esc(X("moods")[r.mood])}</span>` : ""}</div><b>${esc(chOf(r).t)}</b>${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}</article>`).join("")}</div>
-      <div class="card"><p>${tr(`Hai toccato ${pl(cats.length, "categoria", "categorie")}`, `You touched ${pl(cats.length, "", "", "category", "categories")}`)}: ${esc(cats.map(catName).join(", "))}.</p><p>${tr("Prenditi un momento per rileggere: ricordare i successi li rende più forti.","Take a moment to read them again: remembering your wins makes them stronger.")}</p></div>`
+      <div class="card"><p>${tr(`Hai toccato ${pl(cats.length, "categoria", "categorie")}`, `You touched ${pl(cats.length, "", "", "category", "categories")}`)}: ${esc(cats.map(catName).join(", "))}.</p><p>${tr("Prenditi un momento per rileggere: ricordare i successi li rende più forti.","Take a moment to read them again: remembering your wins makes them stronger.")}</p></div>
+    ${activeLessons().some(l => winsWeek(l)) ? `<div class="card"><h3>${tr("Lezioni messe in pratica","Lessons put into practice")}</h3>${activeLessons().filter(l => winsWeek(l)).map(l => `<p>${small(ICON.check)} ${esc(l.plan)} · <b>${tr(`${winsWeek(l)} volte`, `${winsWeek(l)}×`)}</b></p>`).join("")}</div>` : ""}`
     : `<div class="card"><p>${tr("Questa settimana è stata tranquilla, e va bene così. La prossima sfida ti aspetta quando vuoi.","This week was a quiet one, and that's fine. The next challenge is waiting whenever you're ready.")}</p></div>`}
   </div>`);
   v.querySelector("#bk").onclick = () => history.back();
@@ -1711,6 +1726,178 @@ function mine(note){
   mount(v);
 }
 
+/* ---------- LEZIONI: errori ricorrenti trasformati in piani "quando… allora…" ---------- */
+// Psicologia: intenzioni di attuazione (Gollwitzer), contrasto mentale (Oettingen), autocompassione (Neff).
+// Si contano i successi, mai le ricadute; promemoria nel momento a rischio, non a caso.
+const MAX_LESSONS = 5;
+const SLOTS = {any:[0, 24], morning:[5, 12], afternoon:[12, 17], evening:[17, 22], night:[22, 29]};
+const SLOT_TIME = {morning:"0800", afternoon:"1300", evening:"1830", night:"2200"};
+const slotName = (s) => ({any:tr("Sempre","Any time"), morning:tr("Mattina","Morning"), afternoon:tr("Pomeriggio","Afternoon"), evening:tr("Sera","Evening"), night:tr("Notte","Night")})[s] || s;
+const activeLessons = () => (S.lessons || []).filter(l => !l.archived);
+function slotNow(){ let h = new Date().getHours(); if(h < 5) h += 24; return Object.keys(SLOTS).find(k => k !== "any" && h >= SLOTS[k][0] && h < SLOTS[k][1]) || "night"; }
+const wonToday = (l) => (l.wins || []).includes(today());
+const winsWeek = (l) => (l.wins || []).filter(d => gap(d, today()) < 7 && gap(d, today()) >= 0).length;
+// la lezione da ricordare adesso: solo quelle della fascia oraria (o "sempre"), una al giorno per fascia, a rotazione
+function lessonNow(){
+  const t = today(), slot = slotNow(), seen = (S.lessonSeen && S.lessonSeen[t]) || [];
+  const list = activeLessons().filter(l => (l.when === "any" || l.when === slot) && !seen.includes(l.id));
+  if(!list.length) return null;
+  const n = Math.floor(toDate(t) / 864e5) + Object.keys(SLOTS).indexOf(slot);
+  return list[n % list.length];
+}
+function winLesson(id){
+  const l = (S.lessons || []).find(x => x.id === id); if(!l) return;
+  const t = today();
+  l.wins = wonToday(l) ? l.wins.filter(d => d !== t) : (l.wins || []).concat(t);
+  const got = checkBadges(); save();
+  toast(wonToday(l) ? tr("Bravo te! Ogni volta che ci riesci il nuovo schema si rinforza.","Nice one! Every time you manage it, the new pattern gets stronger.") : tr("Segnato come non ancora.","Marked as not yet."));
+  return got;
+}
+function lessonView(l, compact){
+  return `<p class="ifthen"><span class="label">${tr("Quando","When")}</span>${esc(l.signal)}</p>
+    <p class="ifthen then"><span class="label">${tr("Farò invece","Instead I'll")}</span>${esc(l.plan)}</p>
+    ${!compact && l.pattern ? `<p class="small">${tr("Lo schema da cambiare","The pattern to change")}: ${esc(l.pattern)}</p>` : ""}
+    ${l.why ? `<p class="small">${tr("Perché ci tengo","Why it matters")}: ${esc(l.why)}</p>` : ""}`;
+}
+function lessonNowCard(){
+  const l = lessonNow(); if(!l) return "";
+  return `<div class="card lesson-now" id="lnow" style="margin-top:22px">
+    <span class="label">${small(ICON.leaf)} ${tr("Una nota per te","A note to yourself")} · ${esc(slotName(l.when))}</span>
+    ${lessonView(l, true)}
+    <div class="acts" style="margin-top:12px">
+      <button class="btn ${wonToday(l) ? "btn-accent" : "btn-ghost"}" data-lw="${esc(l.id)}" aria-pressed="${wonToday(l)}">${ICON.check}${wonToday(l) ? tr("Gestita oggi","Handled today") : tr("L'ho gestita","I handled it")}</button>
+      <button class="btn btn-ghost" data-lok="${esc(l.id)}">${tr("Ok, grazie","Got it")}</button>
+    </div>
+  </div>`;
+}
+function bindLessonNow(v){
+  v.querySelectorAll("[data-lw]").forEach(b => b.onclick = () => { winLesson(b.dataset.lw); home(); });
+  v.querySelectorAll("[data-lok]").forEach(b => b.onclick = () => {
+    const t = today(); S.lessonSeen = {[t]:((S.lessonSeen || {})[t] || []).concat(b.dataset.lok)}; save(); home();
+  });
+}
+function lessons(note){
+  screen({s:"lessons"});
+  const act = activeLessons(), old = (S.lessons || []).filter(l => l.archived).sort((a, b) => b.archived.localeCompare(a.archived));
+  const full = act.length >= MAX_LESSONS;
+  const v = $(`<div class="pop">
+    <div class="page-h"><span class="label">${tr("Lezioni","Lessons")}</span><h2>${tr("Cosa ho imparato","What I've learned")}</h2>
+      <p>${tr("Gli errori che tendono a ripetersi, trasformati in un piano gentile: quando succede X, farò Y.","Mistakes that tend to repeat, turned into a kind plan: when X happens, I'll do Y.")}</p></div>
+    ${note === "archived" ? `<div class="gift"><div class="react">${mascot("proud", 110)}</div><p class="quote">${tr("Lezione imparata! Non ti serve più: è diventata parte di te.","Lesson learned! You don't need it any more: it's part of you now.")}</p></div>` : ""}
+    ${act.length ? act.map(l => `<article class="card lesson">
+        <div class="eh" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">${ICON.clock}${esc(slotName(l.when))}</span><span class="label">${tr(`${winsWeek(l)} volte questa settimana`, `${winsWeek(l)} ${winsWeek(l) === 1 ? "time" : "times"} this week`)}</span></div>
+        ${lessonView(l)}
+        <div class="acts">
+          <button class="btn ${wonToday(l) ? "btn-accent" : "btn-ghost"}" data-lw="${esc(l.id)}" aria-pressed="${wonToday(l)}">${ICON.check}${wonToday(l) ? tr("Gestita oggi","Handled today") : tr("Oggi l'ho gestita","I handled it today")}</button>
+          <div class="acts2">
+            <button class="btn btn-ghost" data-ledit="${esc(l.id)}">${ICON.pen}${tr("Modifica","Edit")}</button>
+            <button class="btn btn-ghost" data-lch="${esc(l.id)}">${ICON.star}${tr("Allenala","Practise")}</button>
+          </div>
+          <div class="acts2">
+            ${l.when !== "any" ? `<button class="btn btn-ghost" data-lcal="${esc(l.id)}">${ICON.cal}${tr("Calendario","Calendar")}</button>` : `<span></span>`}
+            <button class="btn btn-ghost" data-larc="${esc(l.id)}">${ICON.leaf}${tr("Imparata","Learned")}</button>
+          </div>
+        </div>
+      </article>`).join("")
+    : `<div class="card" style="text-align:center"><div class="react">${mascot("gentle", 100)}</div><p>${tr("Pensa a una cosa che ti capita spesso e che vorresti fare diversamente. Niente processi: solo un piano per la prossima volta.","Think of something that often happens and that you'd like to handle differently. No judgement: just a plan for next time.")}</p></div>`}
+    <div class="acts">
+      <button class="btn btn-accent" id="newl" ${full ? "disabled" : ""} aria-describedby="newl-h">${ICON.plus}${tr("Nuova lezione","New lesson")}</button>
+      <p class="small" id="newl-h">${full ? tr(`Hai già ${MAX_LESSONS} lezioni attive: archiviane una per aggiungerne un'altra. Poche alla volta restano in mente.`, `You already have ${MAX_LESSONS} active lessons: archive one to add another. A few at a time stick better.`) : tr(`Fino a ${MAX_LESSONS} lezioni attive alla volta.`, `Up to ${MAX_LESSONS} active lessons at a time.`)}</p>
+    </div>
+    ${old.length ? `<div class="sec-h"><h3>${tr("Lezioni imparate","Lessons learned")}</h3><span class="label">${old.length}</span></div>
+      <div class="card">${old.map(l => `<div class="mine"><div><b>${esc(l.plan)}</b><span class="small">${tr("Imparata il","Learned on")} ${esc(fmtDay(l.archived, {day:"numeric", month:"short", year:"numeric"}))} · ${tr(`${(l.wins || []).length} volte gestita`, `handled ${(l.wins || []).length} ${(l.wins || []).length === 1 ? "time" : "times"}`)}</span></div><button class="icb" data-lback="${esc(l.id)}" aria-label="${tr("Riattiva","Bring back")}: ${esc(l.plan)}" ${full ? "disabled" : ""}>${ICON.undo}</button></div>`).join("")}</div>` : ""}
+    <p class="foot">${ICON.eye}<span>${tr("Le lezioni sono solo tue: restano su questo telefono e non ti contano mai le ricadute.","Your lessons are yours alone: they stay on this phone and never count your slip-ups.")}</span></p>
+  </div>`);
+  v.querySelectorAll("[data-lw]").forEach(b => b.onclick = () => { winLesson(b.dataset.lw); lessons(); });
+  v.querySelectorAll("[data-ledit]").forEach(b => b.onclick = () => lessonEdit(b.dataset.ledit));
+  v.querySelectorAll("[data-lch]").forEach(b => b.onclick = () => {
+    const l = S.lessons.find(x => x.id === b.dataset.lch);
+    const t = (tr("Allena: ","Practise: ") + l.plan).slice(0, 60);
+    if((S.custom || []).some(c => c.from === l.id)){ toast(tr("È già nel mazzo delle tue sfide.","It's already in your challenge deck.")); return; }
+    S.custom = (S.custom || []).concat({id:"u" + Date.now().toString(36), c:"men", l:1, o:999, t, d:tr(`Prova il tuo piano anche se oggi non serve: ${l.plan}`, `Rehearse your plan even if you don't need it today: ${l.plan}`).slice(0, 140), m:5, w:"", i:false, own:true, from:l.id});
+    checkBadges(); save(); toast(tr("Aggiunta alle tue sfide: potrà uscire nei prossimi giorni.","Added to your challenges: it may come up in the next few days."));
+  });
+  v.querySelectorAll("[data-lcal]").forEach(b => b.onclick = () => icsLesson(S.lessons.find(x => x.id === b.dataset.lcal)));
+  v.querySelectorAll("[data-larc]").forEach(b => b.onclick = () => {
+    const l = S.lessons.find(x => x.id === b.dataset.larc);
+    if(!confirm(tr("Spostare questa lezione tra quelle imparate? Potrai riattivarla quando vuoi.","Move this lesson to the learned ones? You can bring it back any time."))) return;
+    l.archived = today(); checkBadges(); save(); lessons("archived");
+  });
+  v.querySelectorAll("[data-lback]").forEach(b => b.onclick = () => { const l = S.lessons.find(x => x.id === b.dataset.lback); if(l && activeLessons().length < MAX_LESSONS){ l.archived = null; save(); lessons(); } });
+  const nl = v.querySelector("#newl"); nl.onclick = () => { if(!full) lessonEdit(); };
+  v.appendChild(tabBar("lessons"));
+  mount(v);
+}
+function lessonEdit(id){
+  const l = id ? (S.lessons || []).find(x => x.id === id) : null;
+  if(!l && activeLessons().length >= MAX_LESSONS) return lessons();
+  screen({s:"lesson", id:id || null});
+  let when = l ? l.when : "any";
+  const neg = /\b(non|mai|smett\w*|evit\w*|don't|dont|do not|never|stop|avoid|not)\b/i;
+  const v = $(`<div class="pop">
+    ${backBtn(tr("Lezioni","Lessons"))}
+    <div class="page-h"><span class="label">${l ? tr("Modifica","Edit") : tr("Nuova lezione","New lesson")}</span><h2>${tr("La prossima volta…","Next time…")}</h2>
+      <p>${tr("Scrivila come la diresti a un amico: con gentilezza e un piano concreto.","Write it as you'd say it to a friend: kindly, with a concrete plan.")}</p></div>
+    <form class="card" id="lf" novalidate>
+      <div class="field"><label for="lp">${tr("Cosa tende a succedere","What tends to happen")} *</label>
+        <textarea class="in" id="lp" maxlength="140" rows="2" required aria-describedby="lp-e" placeholder="${tr("Es. rispondo male a chi mi sta vicino","E.g. I snap at the people closest to me")}">${esc(l ? l.pattern : "")}</textarea><span class="err" id="lp-e"></span></div>
+      <div class="field"><label for="ls">${tr("Il segnale: quando succede?","The signal: when does it happen?")} *</label>
+        <input class="in" id="ls" maxlength="100" required aria-describedby="ls-h ls-e" placeholder="${tr("Es. la sera, dopo una giornata pesante","E.g. in the evening, after a heavy day")}" value="${esc(l ? l.signal : "")}">
+        <span class="help" id="ls-h">${tr("Più è preciso, più il cervello lo riconosce al volo.","The more precise it is, the faster your brain spots it.")}</span><span class="err" id="ls-e"></span></div>
+      <div class="field"><label for="lpl">${tr("Cosa farai invece","What you'll do instead")} *</label>
+        <textarea class="in" id="lpl" maxlength="140" rows="2" required aria-describedby="lpl-h lpl-e" placeholder="${tr("Es. esco 5 minuti a camminare prima di parlare","E.g. take a 5-minute walk before I talk")}">${esc(l ? l.plan : "")}</textarea>
+        <span class="help" id="lpl-h">${tr("Un'azione da fare, piccola e concreta.","An action to take, small and concrete.")}</span><span class="err" id="lpl-e"></span></div>
+      <div class="field"><label for="lw">${tr("Perché ci tieni (facoltativo)","Why it matters to you (optional)")}</label>
+        <input class="in" id="lw" maxlength="120" value="${esc(l ? l.why || "" : "")}"></div>
+      <fieldset class="field" style="border:0;padding:0;margin:0 0 14px"><legend class="lab" style="font-weight:700;margin-bottom:6px">${tr("Quando ricordarmela","When to remind me")}</legend>
+        <div class="opts">${Object.keys(SLOTS).map(s => `<button type="button" class="opt" data-when="${s}" aria-pressed="${s === when}">${esc(slotName(s))}<span class="ck">${ICON.check}</span></button>`).join("")}</div>
+        <span class="help">${tr("Comparirà nella schermata Oggi in quella fascia oraria. Sceglila vicina al momento a rischio.","It will show on the Today screen during that time of day. Pick one close to the risky moment.")}</span></fieldset>
+      <button class="btn btn-accent" type="submit">${ICON.check}${tr("Salva la lezione","Save the lesson")}</button>
+      ${l ? `<button class="btn btn-quiet" type="button" id="ldel" style="margin-top:8px">${tr("Elimina","Delete")}</button>` : ""}
+    </form>
+  </div>`);
+  const err = (fid, msg) => { const el = v.querySelector("#" + fid); el.setAttribute("aria-invalid", msg ? "true" : "false"); v.querySelector("#" + fid + "-e").textContent = msg; return !msg; };
+  ["lp","ls","lpl"].forEach(fid => v.querySelector("#" + fid).addEventListener("input", (e) => { if(e.target.getAttribute("aria-invalid") === "true") err(fid, ""); }));
+  const plh = v.querySelector("#lpl-h"), base = plh.textContent;
+  v.querySelector("#lpl").addEventListener("blur", (e) => {
+    plh.textContent = neg.test(e.target.value) ? tr("Suggerimento: prova a scrivere cosa farai, non cosa eviterai. Il cervello segue meglio un'azione da fare.","Tip: try writing what you'll do, not what you'll avoid. Your brain follows an action more easily.") : base;
+  });
+  v.querySelectorAll("[data-when]").forEach(b => b.onclick = () => { when = b.dataset.when; v.querySelectorAll("[data-when]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  v.querySelector("#lf").onsubmit = (e) => {
+    e.preventDefault();
+    const pattern = v.querySelector("#lp").value.trim(), signal = v.querySelector("#ls").value.trim(), planT = v.querySelector("#lpl").value.trim(), why = v.querySelector("#lw").value.trim();
+    const a = err("lp", pattern ? "" : tr("Descrivi in breve cosa succede.","Briefly describe what happens."));
+    const b = err("ls", signal ? "" : tr("Scrivi quando succede, anche a grandi linee.","Write when it happens, even roughly."));
+    const c = err("lpl", planT ? "" : tr("Scrivi cosa farai la prossima volta.","Write what you'll do next time."));
+    if(!(a && b && c)){ v.querySelector('[aria-invalid="true"]').focus(); return; }
+    if(l) Object.assign(l, {pattern, signal, plan:planT, why, when});
+    else S.lessons = (S.lessons || []).concat({id:"l" + Date.now().toString(36), pattern, signal, plan:planT, why, when, created:today(), wins:[], archived:null});
+    save(); toast(tr("Lezione salvata.","Lesson saved.")); lessons();
+  };
+  const del = v.querySelector("#ldel");
+  if(del) del.onclick = () => {
+    if(!confirm(tr("Eliminare questa lezione? Non si può annullare. Se ti è servita, puoi invece segnarla come imparata.","Delete this lesson? This can't be undone. If it helped, you can mark it as learned instead."))) return;
+    S.lessons = S.lessons.filter(x => x.id !== l.id); save(); lessons();
+  };
+  v.querySelector("#bk").onclick = () => lessons();
+  mount(v);
+}
+function icsLesson(l){
+  if(!l || !SLOT_TIME[l.when]) return;
+  const d = today().replace(/-/g, ""), now = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const clean = (s) => String(s).replace(/[\\,;]/g, m => "\\" + m).replace(/\n/g, " ");
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Ranocchia//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    "UID:ranocchia-lesson-" + l.id + "@ranocchia","DTSTAMP:" + now, "DTSTART:" + d + "T" + SLOT_TIME[l.when] + "00", "DURATION:PT5M", "RRULE:FREQ=DAILY",
+    "SUMMARY:" + clean(tr("Quando ", "When ") + l.signal + tr(": farò ", ": I'll ") + l.plan),
+    "DESCRIPTION:" + clean(l.why || tr("Una nota gentile da Ranocchia.","A kind note from Ranocchia.")),
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Ranocchia","TRIGGER:PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics], {type:"text/calendar"}));
+  a.download = tr("ranocchia-lezione.ics","ranocchia-lesson.ics"); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(tr("Apri il file per aggiungere il promemoria al calendario.","Open the file to add the reminder to your calendar."));
+}
+
 /* ---------- promemoria quando l'app è aperta ---------- */
 function reminderTick(){
   try{
@@ -1750,7 +1937,7 @@ home();
 setInterval(reminderTick, 60000); reminderTick();
 let lastDay = today();
 document.addEventListener("visibilitychange", () => { if(!document.hidden && today() !== lastDay){ lastDay = today(); S.lastSeen = lastDay; save(); if(curDepth === 0) home(); } });
-window.APP = {mascot, PALETTES, CH, streak, draw, lvInfo, get S(){ return S; }, set S(v){ S = v; }, save, home, levelWeights, cur};   // per scripts/icone.mjs e i test
+window.APP = {mascot, PALETTES, CH, streak, draw, lvInfo, get S(){ return S; }, set S(v){ S = v; }, save, home, levelWeights, cur, lessonNow};   // per scripts/icone.mjs e i test
 })();
 </script>
 <script>if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
