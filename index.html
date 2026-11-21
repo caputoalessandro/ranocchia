@@ -1,0 +1,1408 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ranocchia</title>
+<meta name="description" content="Ranocchia: una piccola sfida al giorno per uscire dalla zona di comfort, con una rana che cresce con te.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#C9E9C0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ranocchia">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Stile fumetto piatto: colori pieni, contorni neri spessi, ombre piatte senza sfumature */
+:root{
+  --bg:#C9E9C0; --bg-shade:#93C788; --surface:#FFFFFF; --ink:#1A1A1A; --muted:#2F5233; --hair:rgba(26,26,26,.16);
+  --deep:#1E5A66; --deep-shade:#113B44; --on-deep:#FFFFFF; --soft:#E8F6E3;
+  --good:#17703F; --good-bg:#C6EED3; --bad:#B0122C; --bad-bg:#FFD4D4;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --t-fast:.15s; --t-mid:.25s; --t-flip:.6s;
+  color-scheme:light;
+}
+:root[data-palette="ninfea"]{--bg:#F8D6DE;--bg-shade:#E0A2B2;--deep:#8C2D55;--deep-shade:#5E1A38;--soft:#FDEBF0;--muted:#683848}
+:root[data-palette="tramonto"]{--bg:#FBD9B4;--bg-shade:#E5AA6E;--deep:#6B3A8C;--deep-shade:#47245E;--soft:#FDEBD8;--muted:#694320}
+:root[data-palette="muschio"]{--bg:#DDE4B2;--bg-shade:#B3BE78;--deep:#4A5A1C;--deep-shade:#2F3A10;--soft:#EEF2D6;--muted:#475023}
+:root[data-palette="pioggia"]{--bg:#E1DAF4;--bg-shade:#B6A8DE;--deep:#4B3A8F;--deep-shade:#2F2361;--soft:#F1EDFB;--muted:#463B68}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent}
+#app{max-width:560px;margin:0 auto;padding-block:max(20px,env(safe-area-inset-top,0px)) 130px}
+button,input,select,textarea{font:inherit;color:inherit}
+button,label.btn{cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,label.btn:focus-within{outline:3px solid var(--ink);outline-offset:3px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h2{overflow-wrap:anywhere;hyphens:auto}
+h3{font-size:20px}
+p{margin:0}
+.label{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pop{animation:pop var(--t-mid) ease-out}
+@keyframes pop{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}
+@keyframes wiggle{0%,100%{transform:rotate(0)}10%{transform:rotate(-5deg)}20%{transform:rotate(4deg)}30%{transform:rotate(0)}}
+@keyframes hop{0%{transform:translateY(12px) scale(.92)}60%{transform:translateY(-8px)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* barra superiore */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:6px}
+.logo{font-size:30px;font-weight:800;letter-spacing:-.01em;color:#fff;-webkit-text-stroke:6px var(--ink);paint-order:stroke fill;white-space:nowrap}
+.stats{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface);border:2.5px solid var(--ink);box-shadow:0 3px 0 var(--bg-shade);font-family:var(--f-mono);font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.4}
+.chip svg{width:16px;height:16px;flex:none}
+.chip.off{background:var(--soft)}
+
+/* card principale con la mascotte */
+.hero{position:relative;background:var(--deep);color:var(--on-deep);border:3px solid var(--ink);border-radius:24px;box-shadow:0 7px 0 var(--bg-shade);padding:16px 18px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:8px;margin-bottom:22px}
+.hero .label{color:#fff}
+.hero .say{background:#fff;color:var(--ink);border:2.5px solid var(--ink);font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1.3;padding:8px 12px;border-radius:16px 16px 4px 16px;margin-top:8px;align-self:center}
+.hero .mascot{transform-origin:50% 100%}
+.hero .mascot.wig{animation:wiggle 2.8s ease-in-out infinite}
+.react{display:flex;justify-content:center;margin:4px 0 8px}
+.react .mascot{animation:hop .45s ease-out}
+
+/* pulsanti che si schiacciano */
+.btn{border:3px solid var(--ink);border-radius:14px;min-height:52px;padding:12px 16px;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;text-align:center;transition:transform var(--t-fast),box-shadow var(--t-fast)}
+.btn svg{width:22px;height:22px;flex:none}
+.btn-main{background:var(--bg);color:var(--ink);box-shadow:0 5px 0 var(--ink)}
+.btn-deep{background:var(--deep);color:#fff;box-shadow:0 5px 0 var(--ink)}
+.btn-ghost{background:var(--surface);box-shadow:0 4px 0 var(--bg-shade)}
+.btn-quiet{background:transparent;border-color:transparent;box-shadow:none;text-decoration:underline;text-underline-offset:3px}
+.btn-danger{background:var(--bad-bg);color:var(--bad);box-shadow:0 4px 0 var(--bg-shade)}
+.btn-main:active,.btn-deep:active,.btn-ghost:active,.btn-danger:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:0 2px 0 var(--bg-shade);transform:none}
+.acts{display:grid;gap:12px;margin-top:16px}
+.acts2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* carta della sfida */
+.flip{perspective:1400px;margin-bottom:8px}
+.flip-in{position:relative;min-height:330px;transition:transform var(--t-flip) cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.face.back{transform:rotateY(180deg);overflow:hidden}
+.cover{width:100%;height:100%;border:3px solid var(--ink);border-radius:22px;background:var(--deep);color:#fff;box-shadow:0 7px 0 var(--bg-shade);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center}
+.cover:active{transform:translateY(4px);box-shadow:0 3px 0 var(--bg-shade)}
+.cover b{font-family:var(--f-display);font-size:28px;font-weight:800;line-height:1.1}
+.cover span{font-size:16px}
+.cover svg.pads{width:150px;height:110px}
+.ch{background:var(--surface);border:3px solid var(--ink);border-radius:22px;box-shadow:0 7px 0 var(--bg-shade);padding:18px;display:grid;gap:12px}
+.face .ch{height:100%}
+.ch h2{font-size:27px;font-weight:800}
+.ch .d{font-size:18px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:2px solid var(--ink);font-family:var(--f-mono);font-size:12.5px;background:var(--soft);line-height:1.5}
+.tag svg{width:15px;height:15px;flex:none}
+.tag.lv{background:var(--bg)}
+.why{background:var(--soft);border:2px solid var(--ink);border-radius:14px;padding:10px 12px;font-size:15.5px}
+.why .label{display:block;margin-bottom:2px}
+.plan{display:flex;gap:8px;align-items:flex-start;background:var(--bg);border:2px solid var(--ink);border-radius:14px;padding:10px 12px;font-size:16px}
+.plan svg{width:20px;height:20px;flex:none;margin-top:2px}
+.stamp{display:inline-flex;align-items:center;gap:6px;justify-self:start;background:var(--good-bg);color:var(--good);border:2.5px solid var(--ink);border-radius:10px;padding:2px 10px;font-family:var(--f-display);font-weight:800;font-size:16px;transform:rotate(-2deg)}
+.stamp svg{width:18px;height:18px}
+.stamp.rest{background:var(--soft);color:var(--muted)}
+.small{font-size:14px;color:var(--muted)}
+
+/* card secondarie */
+.card{background:var(--surface);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--bg-shade);padding:16px;margin-bottom:16px}
+.card h3{margin-bottom:6px}
+.card p+p{margin-top:8px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:26px 0 12px;flex-wrap:wrap}
+.page-h{margin-bottom:18px}
+.page-h h2{font-size:32px;font-weight:800;margin-top:4px}
+.page-h p{margin-top:4px;color:var(--muted)}
+.back{background:none;border:0;min-height:48px;padding:8px 8px 8px 0;color:var(--ink);font-weight:700;display:inline-flex;align-items:center;gap:6px;font-size:16px;margin-bottom:6px}
+.back svg{width:20px;height:20px}
+.foot{margin-top:28px;color:var(--muted);font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.foot svg{width:18px;height:18px;flex:none;margin-top:2px}
+
+/* scelte (chip grandi da toccare) */
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{min-height:48px;padding:10px 14px;border:2.5px solid var(--ink);border-radius:14px;background:var(--surface);box-shadow:0 3px 0 var(--bg-shade);font-weight:700;font-size:16px;display:inline-flex;align-items:center;gap:8px;text-align:left;transition:transform var(--t-fast)}
+.opt svg{width:20px;height:20px;flex:none}
+.opt[aria-pressed="true"]{background:var(--deep);color:#fff;box-shadow:0 3px 0 var(--ink)}
+.opt[aria-pressed="true"] .ck{display:inline}
+.opt .ck{display:none}
+.opt:active{transform:translateY(2px)}
+.faces{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.faceb{min-height:96px;border:3px solid var(--ink);border-radius:16px;background:var(--surface);box-shadow:0 4px 0 var(--bg-shade);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:15px;padding:8px 4px}
+.faceb svg{width:44px;height:44px}
+.faceb[aria-pressed="true"]{background:var(--bg);box-shadow:0 4px 0 var(--ink);outline:3px solid var(--deep);outline-offset:2px}
+
+/* moduli */
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field label,.field .lab{font-weight:700}
+.field .help{font-size:14px;color:var(--muted)}
+.field .err{font-size:14px;color:var(--bad);font-weight:700}
+.in{width:100%;min-height:52px;border:2.5px solid var(--ink);border-radius:12px;background:var(--surface);padding:10px 12px;font-size:17px}
+textarea.in{min-height:110px;resize:vertical}
+.in[aria-invalid="true"]{border-color:var(--bad);background:#FFF5F5}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:56px;width:100%;background:var(--surface);border:2.5px solid var(--ink);border-radius:14px;padding:8px 14px;text-align:left;font-weight:700;box-shadow:0 3px 0 var(--bg-shade)}
+.switch .tr{width:52px;height:30px;border-radius:999px;border:2.5px solid var(--ink);background:var(--soft);position:relative;flex:none;transition:background var(--t-fast)}
+.switch .tr::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--surface);border:2.5px solid var(--ink);transition:transform var(--t-fast)}
+.switch[aria-checked="true"] .tr{background:var(--deep)}
+.switch[aria-checked="true"] .tr::after{transform:translateX(22px)}
+.switch small{display:block;font-weight:400;color:var(--muted);font-size:14px}
+.stack{display:grid;gap:12px}
+
+/* calendario */
+.cal-h{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:8px;margin-bottom:10px}
+.cal-h h3{text-align:center;text-transform:capitalize}
+.icb{width:48px;height:48px;border:2.5px solid var(--ink);border-radius:12px;background:var(--surface);box-shadow:0 3px 0 var(--bg-shade);display:grid;place-items:center}
+.icb svg{width:22px;height:22px}
+.icb:disabled{opacity:.4}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .wd{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-bottom:4px}
+.cal .dd{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;border-radius:10px;font-variant-numeric:tabular-nums}
+.cal .dd.today{outline:2.5px solid var(--ink);outline-offset:-2px;font-weight:700}
+.dot{width:12px;height:12px;border-radius:50%;display:block}
+.dot.done{background:var(--deep);border:2px solid var(--ink)}
+.dot.skip{border:2.5px solid var(--muted);background:transparent}
+.dot.none{background:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.entry{display:grid;gap:6px}
+.entry+.entry{border-top:2px dashed var(--hair);padding-top:12px;margin-top:12px}
+.entry .eh{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.entry b{font-family:var(--f-display);font-size:18px;line-height:1.2}
+.entry .note{background:var(--soft);border-radius:10px;padding:8px 10px;font-size:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.mface{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)}
+.mface svg{width:24px;height:24px}
+
+/* progressi */
+.lvcard{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.meter{height:16px;border-radius:8px;background:var(--soft);border:2.5px solid var(--ink);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--deep)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--bg-shade);padding:10px 12px}
+.kpi b{display:block;font-family:var(--f-display);font-size:30px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:14px;color:var(--muted)}
+.bars{display:grid;gap:12px}
+.bar{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center}
+.bar svg{width:24px;height:24px}
+.bar .bt{display:grid;gap:4px;min-width:0}
+.bar .bt span{font-weight:700;font-size:16px}
+.bar output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:15px;min-width:2ch;text-align:right}
+.diffm{position:relative;display:grid;grid-template-columns:repeat(3,1fr);border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;margin:8px 0 4px}
+.diffm span{padding:6px 4px;text-align:center;font-size:14px;font-weight:700;background:var(--soft)}
+.diffm span+span{border-left:2.5px solid var(--ink)}
+.diffm span.on{background:var(--deep);color:#fff}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.badge{border:2.5px solid var(--ink);border-radius:16px;background:var(--surface);padding:10px;display:grid;justify-items:center;text-align:center;gap:4px;box-shadow:0 3px 0 var(--bg-shade)}
+.badge .bi{width:52px;height:52px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;background:var(--bg)}
+.badge .bi svg{width:28px;height:28px}
+.badge b{font-family:var(--f-display);font-size:16px;line-height:1.2}
+.badge span{font-size:13px;color:var(--muted);line-height:1.3}
+.badge.lock{background:var(--soft);box-shadow:none;border-style:dashed}
+.badge.lock .bi{background:var(--surface)}
+.wardrobe{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.wb{border:2.5px solid var(--ink);border-radius:16px;background:var(--surface);box-shadow:0 3px 0 var(--bg-shade);padding:6px 4px 8px;display:grid;justify-items:center;gap:2px;font-size:13px;font-weight:700;min-height:120px;text-align:center}
+.wb[aria-pressed="true"]{background:var(--bg);outline:3px solid var(--deep);outline-offset:2px}
+.wb:disabled{opacity:1;background:var(--soft);border-style:dashed;box-shadow:none;color:var(--muted);cursor:default}
+.wb:disabled svg.mascot{opacity:.35}
+
+/* impostazioni */
+.pals{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pal{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--surface);border:2.5px solid var(--ink);border-radius:16px;padding:10px;box-shadow:0 4px 0 var(--bg-shade)}
+.pal[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.sw{position:relative;height:58px;border-radius:10px;border:2.5px solid var(--ink);display:flex;align-items:center;padding:0 12px;overflow:hidden}
+.sw i{position:absolute;right:0;top:0;bottom:0;width:38%;border-left:2.5px solid var(--ink)}
+.sw b{font-family:var(--f-display);font-size:24px;color:#1A1A1A;position:relative}
+.pt2{display:flex;flex-direction:column;min-width:0}
+.pt2 b{font-family:var(--f-display);font-size:17px}
+.pt2 span{color:var(--muted);font-size:13px}
+.mine{display:grid;grid-template-columns:1fr 48px;gap:10px;align-items:center}
+.mine+.mine{border-top:2px dashed var(--hair);padding-top:10px;margin-top:10px}
+.mine b{display:block;line-height:1.25}
+
+/* sorpresa */
+.gift{background:var(--soft);border:3px solid var(--ink);border-radius:18px;padding:14px;display:grid;gap:8px;justify-items:center;text-align:center;margin-bottom:16px}
+.gift .label{color:var(--ink)}
+.quote{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.3}
+.big-xp{font-family:var(--f-display);font-weight:800;font-size:44px;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
+
+/* barra delle sezioni */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border-top:3px solid var(--ink);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;background:none;border:2.5px solid transparent;border-radius:14px;padding:4px 2px;font-size:12.5px;font-weight:700;color:var(--muted);max-width:150px;width:100%;justify-self:center}
+.tab svg{width:24px;height:24px}
+.tab.on{color:var(--ink);background:var(--bg);border-color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;max-width:min(92vw,480px);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-weight:700;opacity:0;pointer-events:none;transition:opacity var(--t-mid)}
+#toast.on{opacity:1}
+.edge{position:fixed;left:0;top:50%;z-index:40;width:44px;height:44px;margin-top:-22px;border-radius:50%;background:var(--surface);border:3px solid var(--ink);display:grid;place-items:center;opacity:0;pointer-events:none}
+@media (min-width:700px){.ch h2{font-size:30px}}
+</style>
+</head><body>
+<main id="app" tabindex="-1"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ---------- le sfide: "Titolo|Descrizione|minuti|Perché aiuta|i" (i = da fare con qualcuno) ---------- */
+/* Nell'ordine di ogni elenco c'è la scala dell'esposizione graduale: dal gradino più piccolo al più grande. */
+const RAW = {
+cor: {
+1: [
+"Scale, non ascensore|Oggi prendi le scale almeno una volta, anche se c'è l'ascensore.|3|Le piccole scelte attive, ripetute, diventano identità: «sono una persona che si muove».",
+"Il bicchiere del risveglio|Appena ti alzi bevi un grande bicchiere d'acqua, prima del caffè.|2|Agganciare un gesto nuovo a uno che fai già lo rende automatico (Tiny Habits).",
+"Stiracchiata da gatto|Alzati e allungati per 2 minuti: braccia al cielo, busto a destra e a sinistra, collo piano.|2|Un movimento breve interrompe la sedentarietà e scioglie la tensione dei muscoli.",
+"Cinque respiri lenti|Inspira contando fino a 4 ed espira fino a 6, per cinque volte di fila.|2|Un'espirazione più lunga dell'inspirazione attiva il sistema nervoso che calma il corpo.",
+"Spalle giù|Porta le spalle verso le orecchie, tienile su 3 secondi e lasciale cadere. Ripeti 5 volte.|2|Contrarre e rilasciare un muscolo insegna al corpo la differenza tra tensione e riposo.",
+"Telefonata in piedi|La prossima telefonata falla in piedi, camminando per la stanza.|5|Legare il movimento a una cosa che fai già toglie la fatica di decidere.",
+"Frutta al posto dello snack|Al prossimo spuntino scegli un frutto invece di qualcosa di confezionato.|2|Sostituire è più facile che eliminare: il gesto resta, cambia solo la scelta.",
+"Dieci piegamenti lenti|Fai 10 piegamenti sulle gambe, lentamente, tenendoti a una sedia se serve.|2|Partire così in piccolo da non poter fallire è il modo più sicuro per creare un'abitudine.",
+"La passeggiata del dopo pasto|Dopo un pasto cammina 10 minuti, anche solo intorno all'isolato.|10|Camminare dopo mangiare aiuta la digestione e l'umore, ed è un'abitudine facile da agganciare."
+],
+2: [
+"Gli ultimi 30 secondi freschi|Finisci la doccia con 30 secondi di acqua fresca o fredda, respirando con calma.|2|Un disagio breve e scelto da te insegna che puoi tollerarlo: è esposizione volontaria.",
+"Una fermata prima|Scendi una fermata prima, o parcheggia più lontano, e fai l'ultimo tratto a piedi.|10|Cambiare un dettaglio della routine rende il movimento parte della giornata, senza tempo in più.",
+"Plank da un minuto|Tieni la posizione del plank, anche sulle ginocchia, per 60 secondi in tutto, a pezzi se serve.|3|Restare in uno sforzo breve allena anche la mente a non mollare al primo fastidio.",
+"Venti saltelli|Fai 20 saltelli sul posto, oppure 20 passi sul posto con le ginocchia alte.|2|Una breve scarica di movimento alza l'energia e la concentrazione per un po'.",
+"Dieci minuti di passo svelto|Cammina per 10 minuti a passo deciso, come se fossi un po' in ritardo.|10|Bastano 10 minuti di attività moderata per migliorare l'umore nelle ore successive.",
+"Piatto per metà verde|Componi il pranzo o la cena in modo che metà del piatto sia verdura.|10|Una regola visiva semplice funziona meglio di mille buoni propositi sulla dieta.",
+"Pasto senza schermi|Fai un pasto senza telefono né TV, notando sapori e consistenze.|15|Mangiare con attenzione aiuta ad accorgersi della sazietà e ad assaporare davvero.",
+"Il rito della buonanotte|Stasera metti il telefono a caricare fuori dalla camera, 15 minuti prima di dormire.|2|Cambiare l'ambiente funziona meglio della forza di volontà, e il sonno ringrazia.",
+"Dieci minuti di allungamento|Segui una sequenza di allungamenti per 10 minuti: gambe, schiena, spalle.|10|Dare al corpo un tempo preciso trasforma un'intenzione vaga in un'azione chiara."
+],
+3: [
+"Balla una canzone intera|Metti una canzone che ami e ballala tutta, dall'inizio alla fine, come viene.|4|Muoversi senza giudicarsi abbassa l'autocritica e libera energia.",
+"Un minuto di acqua fredda|Chiudi la doccia con un minuto intero di acqua fredda, respirando lentamente.|2|Restare calmi in un disagio controllato allena la regolazione delle emozioni.",
+"Un esercizio mai fatto|Prova un esercizio che non hai mai fatto, come un affondo o un ponte, seguendo un video breve.|10|Uscire dal solito repertorio stimola il corpo e la fiducia nella tua capacità di imparare.",
+"Tre piani di fila|Sali tre piani di scale di fila a passo deciso, poi scendi con calma.|5|Uno sforzo breve e intenso mostra al corpo, e a te, che sai fare più di quanto pensi.",
+"Il primo chilometro|Cammina a passo svelto o corri piano per un chilometro tutto di fila, al tuo ritmo.|12|Un traguardo misurabile ti dà una prova concreta di ciò che sai fare.",
+"Testa alta per strada|Per 10 minuti cammina per strada a testa alta e spalle aperte, guardando avanti e non il telefono.|10|La postura aperta cambia come ti senti e come ti vedi: piccolo passo, grande effetto.",
+"Assaggio coraggioso|Assaggia una verdura, un frutto o una spezia che non hai mai mangiato.|5|La curiosità verso il nuovo, anche nel piatto, allena l'apertura mentale.",
+"Allenamento all'aperto|Fai 10 minuti di esercizi a corpo libero in un parco o in cortile.|10|Farlo dove qualcuno può vederti allena anche il coraggio di lasciar perdere il giudizio altrui.",
+"Passeggiata in compagnia|Proponi a un amico o a un collega una passeggiata di 15 minuti, oggi.|15|Il movimento condiviso unisce due bisogni in uno: muoversi e sentirsi in relazione.|i"
+]
+},
+men: {
+1: [
+"Tre cose belle|Scrivi tre cose andate bene oggi e perché sono successe.|5|È un esercizio classico della psicologia positiva: allena l'attenzione a notare il buono.",
+"Un minuto di suoni|Siediti, chiudi gli occhi e ascolta tutti i suoni intorno a te per un minuto.|2|Portare l'attenzione ai sensi riporta nel presente e calma il rimuginio.",
+"Svuota-testa|Scrivi su un foglio tutto quello che ti gira in testa per 5 minuti, senza ordine.|5|Mettere i pensieri su carta libera la memoria di lavoro e riduce l'ansia.",
+"Una parola nuova|Cerca il significato di una parola che non conosci e usala in una frase.|3|Imparare una cosa piccola ogni giorno nutre il senso di competenza.",
+"Il pensiero gentile|Nota un pensiero critico verso di te e riscrivilo come lo diresti a un amico.|5|L'autocompassione riduce la paura di sbagliare e rende più facile riprovare.",
+"Cinque pagine di carta|Leggi cinque pagine di un libro di carta, non dal telefono.|10|Un obiettivo minuscolo abbassa la resistenza a iniziare, e spesso poi continui.",
+"Ciò che conta oggi|Scrivi in una riga la cosa che conta davvero per te oggi.|2|Chiarire un valore aiuta a fare le piccole scelte della giornata.",
+"Cinque, quattro, tre, due, uno|Nomina 5 cose che vedi, 4 che tocchi, 3 suoni, 2 odori e 1 sapore.|3|Questo esercizio di radicamento interrompe l'agitazione e riporta l'attenzione al corpo.",
+"Come funziona?|Scegli un oggetto che usi ogni giorno e scopri come funziona, con un articolo o un video breve.|10|La curiosità attiva il circuito della ricompensa e rende piacevole imparare."
+],
+2: [
+"Lettera a te di un anno fa|Scrivi tre righe alla persona che eri un anno fa: cosa vorresti dirle?|10|Guardare il proprio percorso rende visibile la crescita, anche quando sembra ferma.",
+"La paura in tre colonne|Scrivi una cosa che temi, il peggio che potrebbe succedere e cosa faresti in quel caso.|10|Rendere concreta una paura la fa sembrare più piccola e più gestibile.",
+"Dieci minuti di respiro|Siediti e segui il respiro per 10 minuti; quando ti distrai, torna con gentilezza.|10|Ogni volta che riporti l'attenzione fai una ripetizione per il «muscolo» della concentrazione.",
+"Cinque parole straniere|Impara cinque parole utili in una lingua che non conosci e ripetile a voce senza guardare.|10|Richiamare a memoria fissa i ricordi molto meglio che rileggere.",
+"Il diario dell'errore utile|Scrivi un errore recente e cosa ti ha insegnato.|5|Vedere gli errori come informazioni è il cuore della mentalità di crescita.",
+"Cinque perché|Prendi un piccolo problema e chiediti «perché?» cinque volte di fila, scrivendo le risposte.|10|Andare oltre la prima risposta aiuta a trovare la causa vera.",
+"Calcoli a mente|Fai a mente tre calcoli della giornata, come un resto o uno sconto, prima di controllarli.|5|Rinunciare per un attimo agli strumenti tiene allenata la mente.",
+"Spiegalo semplice|Scegli un concetto che conosci e spiegalo per iscritto come a un bambino di dieci anni.|10|Spiegare in parole semplici mostra cosa hai capito davvero.",
+"L'altra campana|Leggi un articolo che sostiene un'idea diversa dalla tua, cercando cosa c'è di sensato.|15|Allenare l'umiltà intellettuale rende più flessibili e meno reattivi."
+],
+3: [
+"Il messaggio che rimandi|Scrivi e invia l'email o il messaggio che rimandi da tempo.|15|Affrontare una piccola cosa evitata riduce l'ansia che l'evitamento alimenta.",
+"Il tuo merito, a voce|Davanti allo specchio di' ad alta voce una cosa che hai fatto bene questa settimana.|2|Riconoscere i propri meriti senza sminuirli rafforza la fiducia nelle proprie capacità.",
+"La decisione in sospeso|Prendi oggi una piccola decisione che stai rimandando, dandoti al massimo 10 minuti.|10|Decidere con un limite di tempo scioglie la paralisi da troppe analisi.",
+"Il tuo «no» scritto|Pensa a una richiesta a cui vorresti dire di no e prepara la frase, gentile e chiara.|5|Preparare le parole in anticipo rende più facile difendere i propri confini.",
+"Principiante per un quarto d'ora|Dedica 15 minuti a qualcosa che non sai fare e accetta di non saperlo fare «ancora».|15|Il «non ancora» è la parola chiave della mentalità di crescita.",
+"Il sogno con il primo passo|Scrivi in cinque righe un obiettivo che ti sta a cuore e il primo passo minuscolo per avvicinarlo.|10|Un obiettivo scritto con un primo passo concreto ha molte più probabilità di realizzarsi.",
+"Rileggi la critica|Rileggi una critica ricevuta di recente e scrivi cosa contiene di utile.|10|Separare l'informazione dall'emozione trasforma la critica in uno strumento.",
+"Chiedi un parere sincero|Chiedi a una persona di cui ti fidi: «Cosa potrei fare meglio?» e ascolta senza difenderti.|10|Il riscontro cercato attivamente accelera la crescita e riduce la paura del giudizio.|i",
+"Ammetti un errore|Riconosci con qualcuno un piccolo errore che hai fatto, senza troppe giustificazioni.|5|Ammettere un errore costruisce fiducia e alleggerisce il perfezionismo.|i"
+]
+},
+soc: {
+1: [
+"Un sorriso al primo che incroci|Guarda negli occhi e sorridi alla prima persona che incontri.|2|È il primo gradino dell'esposizione sociale: rischio quasi nullo, piccolo successo.",
+"Il primo saluto|Saluta tu per primo almeno una persona: un vicino, un collega, chi lavora al bar.|2|Prendere l'iniziativa in un gesto piccolo prepara a quelli più grandi.",
+"Grazie con il nome|Ringrazia qualcuno chiamandolo per nome, se lo conosci o lo leggi sul cartellino.|2|Usare il nome rende il contatto più personale e piacevole per entrambi.",
+"Tre sguardi|In tre conversazioni di oggi mantieni lo sguardo mentre l'altra persona parla.|5|Allenare il contatto visivo nelle situazioni facili lo rende naturale in quelle difficili.",
+"Due parole in coda|Mentre aspetti in coda fai un commento leggero, sul tempo o sull'attesa, a chi ti sta accanto.|2|Le chiacchiere brevi con sconosciuti migliorano l'umore più di quanto ci aspettiamo.",
+"Una domanda in più|Quando ti chiedono «come va?», rispondi e fai tu una domanda vera in cambio.|2|Le domande di approfondimento fanno sentire l'altro ascoltato e aumentano la simpatia.",
+"Un vocale invece di un testo|Invece di scrivere, manda un messaggio vocale breve a un amico.|2|La voce trasmette calore e avvicina più di un testo.|i",
+"Ascolto pieno|Nella prossima conversazione metti via il telefono e ascolta senza interrompere.|10|L'ascolto attivo è la base di ogni relazione che funziona.|i",
+"Una chiamata per sapere come sta|Telefona a una persona cara per 5 minuti, solo per sapere come sta.|5|Una voce amica nutre il bisogno di relazione, uno dei tre bisogni base della motivazione.|i"
+],
+2: [
+"Il consiglio del commesso|In un negozio chiedi a chi ci lavora cosa ti consiglierebbe.|3|È un'interazione breve e prevedibile che allarga di poco la tua zona di comfort.",
+"Un consiglio sul quartiere|Chiedi a un passante o a un negoziante un consiglio su un parco o un bar della zona.|2|Chiedere a uno sconosciuto, con una domanda facile, è il gradino dopo il saluto.",
+"Una domanda in riunione|In una riunione o a lezione fai almeno una domanda o un commento.|2|Parlare davanti a più persone, a piccoli passi, riduce l'ansia da prestazione.",
+"Ti presento me|Presentati a una persona che vedi spesso ma con cui non hai mai parlato.|3|Ogni presentazione fatta rende la successiva meno faticosa: è esposizione graduale.",
+"La telefonata rimandata|Fai una telefonata che rimandi, per prenotare o chiedere un'informazione, invece di scrivere.|5|Le telefonate temute diventano più facili ogni volta che le fai.",
+"Chiedi una mano|Chiedi aiuto a qualcuno per una cosa piccola che sapresti fare anche da te.|3|Chiedere aiuto fa sentire l'altro utile e spesso avvicina invece di pesare.|i",
+"Un caffè insieme|Invita un collega o un conoscente a prendere un caffè insieme.|5|Trasformare un conoscente in qualcosa di più parte sempre da un invito piccolo.|i",
+"Un pezzetto di te|In una conversazione racconta una cosa personale piccola, come un hobby o una paura buffa.|5|Aprirsi un po' alla volta è il modo in cui nascono le amicizie.|i",
+"Sì, e…|A una proposta di qualcuno rispondi con entusiasmo e aggiungi un'idea tua.|3|Rispondere in modo attivo e costruttivo alle buone notizie e alle idee rafforza i legami.|i"
+],
+3: [
+"Un complimento sincero e preciso|Fai a qualcuno un complimento specifico su una cosa che ha fatto.|2|Sottovalutiamo quanto gli altri apprezzino i complimenti: scoprirlo riduce l'ansia sociale.",
+"Una chiacchierata nuova|In coda, in treno o al parco, inizia una breve conversazione con qualcuno che sembra disponibile.|5|Parlare con sconosciuti rende la giornata più piacevole, per te e per l'altra persona.",
+"Rompi il ghiaccio|In un gruppo, in riunione, a cena o in chat, sii la prima persona a parlare.|3|Prendere la parola per primi, una volta, rende più semplice rifarlo.",
+"Presentati con una passione|In un gruppo nuovo o a un evento presentati con il nome e una cosa che ti appassiona.|3|Condividere ciò che ami rende la presentazione più naturale e memorabile.",
+"La tua opinione, con calma|In una discussione esprimi con calma un'opinione diversa da quella del gruppo.|3|Esprimersi con rispetto rafforza l'autostima e la fiducia degli altri in te.",
+"Un no gentile|Di' di no a una richiesta che non vuoi accettare, con gentilezza e senza scuse lunghe.|2|Ogni «no» detto con rispetto rinforza i tuoi confini.",
+"Di' cosa ti serve|Di' a una persona vicina una cosa di cui hai bisogno, in modo semplice: «Mi aiuterebbe se…».|5|Comunicare i bisogni in modo chiaro riduce malintesi e risentimento.|i",
+"Organizza tu|Proponi tu un'uscita o una videochiamata di gruppo, scegliendo giorno e orario.|10|Prendere l'iniziativa trasforma l'attesa in relazione.|i",
+"Il primo passo per chiarire|Contatta una persona con cui c'è stato un piccolo attrito e proponi di parlarne.|10|Fare il primo passo per riparare un rapporto è un atto di coraggio e di maturità.|i"
+]
+},
+dis: {
+1: [
+"Il cassetto del caos|Riordina un solo cassetto: svuotalo, butta il superfluo, rimetti.|10|Una piccola vittoria visibile dà lo slancio per le altre cose.",
+"Il letto fatto|Appena ti alzi, rifai il letto.|2|Cominciare con un compito completato crea un piccolo effetto a catena.",
+"Tre cose da due minuti|Fai subito tre cose che richiedono meno di 2 minuti: una risposta, un piatto, un file.|6|Chiudere i compiti minuscoli libera la mente dai pensieri in sospeso.",
+"Le tre di domani|Scrivi le tre cose più importanti da fare domani.|3|Pianificare la sera riduce la fatica di decidere al mattino.",
+"Silenzio a un'app|Disattiva le notifiche di un'app che ti distrae spesso.|2|Togliere uno stimolo dall'ambiente vale più di mille buoni propositi.",
+"Il piatto subito|Dopo il prossimo pasto lava e metti a posto subito quello che hai usato.|5|Agganciare un gesto a un momento preciso lo rende automatico.",
+"Tutto pronto per domani|Prepara stasera vestiti, borsa o pranzo per domani.|10|Ridurre gli ostacoli del mattino rende più facile partire bene.",
+"Scrivania digitale|Chiudi le schede che non servono e archivia o cancella 10 file dal desktop.|5|L'ordine visivo riduce il carico mentale.",
+"Solo cinque minuti|Scegli un compito noioso e fallo per 5 minuti con un timer. Poi puoi fermarti.|5|Iniziare è la parte più difficile: con un limite piccolo la resistenza crolla."
+],
+2: [
+"Mangia il rospo|Dedica 15 minuti al compito che rimandi da più tempo, prima di qualsiasi altra cosa. (Non me, eh!)|15|Affrontare subito la cosa più temuta toglie peso al resto della giornata.",
+"Telefono in esilio|Metti il telefono in un'altra stanza e per 15 minuti fai una cosa sola.|15|Togliere la tentazione dall'ambiente funziona meglio della forza di volontà.",
+"Quindici e tre|Lavora 15 minuti con piena concentrazione senza controllare nulla, poi fai 3 minuti di pausa.|15|Blocchi brevi e protetti rendono la concentrazione sostenibile.",
+"Cinque newsletter in meno|Annulla l'iscrizione a 5 newsletter che non leggi più.|5|Ridurre il rumore in entrata libera attenzione per ciò che conta.",
+"Dove vanno i soldi|Annota tutte le spese degli ultimi tre giorni e guarda dove vanno.|10|Osservare un comportamento è già il primo passo per cambiarlo.",
+"Un angolo perfetto|Scegli un angolo di casa, come una mensola o una sedia, e mettilo completamente in ordine.|15|Un risultato completo, anche piccolo, nutre il senso di competenza.",
+"Un'ora senza social|Sposta le app dei social in una cartella nascosta e non aprirle per un'ora.|2|Aggiungere un passaggio in più rende l'abitudine automatica più facile da interrompere.",
+"La prima pagina della posta|Dedica 15 minuti a rispondere, archiviare o cancellare finché la prima pagina della posta è vuota.|15|Un confine chiaro, una pagina, rende affrontabile un compito che sembra infinito.",
+"Due spazi per te|Guarda il calendario dei prossimi 7 giorni e blocca due spazi solo per te.|10|Proteggere il tempo con un impegno scritto aumenta le probabilità di usarlo davvero."
+],
+3: [
+"Via l'app ladra di tempo|Disinstalla per una settimana l'app che ti ruba più tempo.|2|Cambiare l'ambiente è la strategia di autocontrollo più efficace.",
+"Dieci oggetti da lasciare andare|Scegli 10 oggetti che non usi più da donare, regalare o riciclare.|15|Lasciare andare il superfluo allena a decidere e alleggerisce lo spazio mentale.",
+"Disdici ciò che non usi|Controlla gli abbonamenti attivi e disdici quello che non usi più.|10|Un'azione rimandata per mesi, fatta in pochi minuti, è una grande vittoria.",
+"Una passeggiata senza telefono|Fai 15 minuti a piedi in un posto che conosci bene, lasciando il telefono a casa.|15|Stare senza connessione per poco tempo mostra che la noia e l'attesa si reggono bene.",
+"Il compito temuto in tre passi|Prendi un compito che ti spaventa, dividilo in tre passi minuscoli e fai subito il primo.|15|Spezzare un compito grande lo rende meno minaccioso e più facile da iniziare.",
+"Modalità aereo dalle 21|Stasera metti il telefono in modalità aereo dalle 21 fino al mattino.|2|Una regola chiara con un orario preciso è più facile da rispettare di un «meno telefono».",
+"Cucina invece di ordinare|Prepara un pasto semplice con quello che hai in casa invece di ordinare.|15|Scegliere la strada un po' più faticosa rafforza la fiducia nella tua autonomia.",
+"La risposta difficile|Rispondi al messaggio che eviti, anche solo con «Ci penso e ti rispondo entro venerdì».|5|Una risposta onesta e breve scioglie il nodo dell'evitamento.",
+"La promessa condivisa|Racconta a un amico un piccolo obiettivo della settimana e chiedigli di chiederti com'è andata.|5|Un impegno condiviso con qualcuno aumenta molto le probabilità di mantenerlo.|i"
+]
+},
+cre: {
+1: [
+"La mano sbagliata|Disegna l'oggetto che hai davanti con la mano che non usi.|5|Se il risultato è per forza buffo, smetti di giudicarlo e ti godi il fare.",
+"Tre angolazioni strane|Scatta tre foto di un oggetto comune da angolazioni insolite.|5|Cambiare punto di vista allena il pensiero divergente.",
+"Scarabocchio libero|Riempi un foglio di forme e linee per 5 minuti, senza un obiettivo.|5|Il gioco senza scopo abbassa il controllo critico e lascia spazio alle idee.",
+"La giornata in sei parole|Racconta la tua giornata con una storia di sei parole.|3|I vincoli stretti stimolano la creatività invece di bloccarla.",
+"Strada nuova|Fai un tratto di strada che non hai mai percorso, per tornare a casa o per un giro.|10|La novità risveglia l'attenzione e la curiosità.",
+"Dieci usi per una graffetta|Trova 10 usi diversi per un oggetto qualunque, come una graffetta o un cucchiaio.|5|È un classico esercizio di pensiero divergente: più idee, più flessibilità.",
+"La colonna sonora di oggi|Crea una playlist di 5 canzoni che descrivono il tuo umore di oggi.|10|Dare forma alle emozioni con la musica aiuta a riconoscerle.",
+"Il film di oggi|Dai alla giornata un titolo da film e scrivi la trama in tre righe.|5|Raccontare la propria giornata come una storia aiuta a vederla con più leggerezza.",
+"Mini-collage|Ritaglia immagini da una rivista o da carta di recupero e componi un piccolo collage.|15|Lavorare con le mani e con materiali poveri allena l'inventiva senza pressione."
+],
+2: [
+"Quattro righe dalla finestra|Scrivi una poesia di quattro righe su qualcosa che vedi dalla finestra.|10|Osservare e trasformare in parole allena l'attenzione e l'immaginazione insieme.",
+"Ricetta improvvisata|Cucina qualcosa combinando in modo nuovo ingredienti che hai già.|15|Creare con quello che c'è, senza ricetta, allena la flessibilità.",
+"Autoritratto lampo|Disegna un autoritratto in 5 minuti guardandoti allo specchio, senza cancellare.|5|Rinunciare alla gomma insegna ad andare avanti anche senza perfezione.",
+"Tre parole, una storia|Scegli tre parole a caso e scrivi una storia breve che le contenga tutte.|10|Collegare elementi lontani è il meccanismo base del pensiero creativo.",
+"Riprogetta un oggetto|Disegna come miglioreresti un oggetto di casa che ti dà fastidio.|10|Guardare i problemi come occasioni di progetto rende più propositivi.",
+"Caccia fotografica|Scatta 5 foto su un tema: un colore, una forma o una lettera dell'alfabeto.|10|Un tema preciso affina lo sguardo e ti fa notare ciò che di solito sfugge.",
+"Fumetto in tre vignette|Disegna un fumetto di tre vignette su un momento buffo della settimana.|15|Trasformare un ricordo in storia aiuta ad assaporarlo di nuovo.",
+"Melodia inventata|Canticchia una melodia inventata da te e registrala con il telefono.|3|Creare qualcosa di nuovo, anche di piccolo, rafforza l'idea di essere una persona creativa.",
+"Lettera dal futuro|Scrivi una breve lettera da te tra cinque anni a te di oggi.|10|Immaginare il sé futuro rende più vicini e concreti gli obiettivi lontani."
+],
+3: [
+"Canta a piena voce|Canta una canzone intera a voce piena. Sotto la doccia va benissimo.|4|Lasciarsi sentire, anche solo da sé, allena a non trattenersi.",
+"Due minuti a ruota libera|Scegli un tema a caso e parla ad alta voce per 2 minuti senza fermarti.|3|Improvvisare insegna che puoi cavartela anche senza preparazione.",
+"Disegno dal vero in pubblico|Siediti in un parco o in un bar e disegna per 10 minuti quello che vedi.|10|Creare dove altri possono vederti allena il coraggio di mostrarti mentre impari.",
+"Video da trenta secondi|Registra un video di 30 secondi in cui spieghi una cosa che sai fare. Puoi anche non mostrarlo.|10|Vedersi e sentirsi spiegare qualcosa costruisce sicurezza nel comunicare.",
+"L'idea più strana|Scrivi l'idea più strana che ti viene per un progetto e il primo passo per provarla.|10|Dare spazio alle idee bizzarre, senza censurarle subito, è dove nasce l'originalità.",
+"Mostra una tua creazione|Manda a una persona fidata un disegno, una foto o un testo fatto da te.|3|Mostrare il proprio lavoro, partendo da chi ci vuole bene, riduce la paura del giudizio.|i",
+"Una storia a voce|Racconta a qualcuno un aneddoto della tua vita come una storia, con un inizio e un finale.|5|Raccontare bene un ricordo lo rende più vivido e avvicina chi ascolta.|i",
+"Una poesia in regalo|Scrivi quattro righe per una persona e mandagliele.|10|Creare per qualcuno unisce creatività e relazione, due fonti di benessere.|i",
+"Cosa cambieresti?|Mostra una tua creazione a qualcuno e chiedi cosa cambierebbe.|5|Chiedere un parere sul proprio lavoro è il modo più rapido per migliorare.|i"
+]
+},
+gen: {
+1: [
+"Grazie a chi lavora|Ringrazia di cuore chi fa un lavoro spesso invisibile: chi pulisce, chi consegna, chi serve.|2|Un grazie sincero migliora la giornata di chi lo riceve e di chi lo dà.",
+"Cedi il passo|Oggi lascia passare qualcuno davanti a te, in coda o in strada.|2|I piccoli gesti di cortesia alzano l'umore di entrambi.",
+"Una recensione buona|Lascia una recensione positiva a un negozio o a un locale che ti piace.|5|Notare e dire ciò che funziona allena lo sguardo verso il buono.",
+"Un pensiero per te|Fai una cosa gentile per te: una pausa, un tè, due passi. Senza sensi di colpa.|10|La gentilezza verso di sé ricarica le energie per esserlo con gli altri.",
+"Un grazie scritto|Scrivi un messaggio di ringraziamento a qualcuno che ti ha aiutato di recente.|3|Esprimere gratitudine aumenta il benessere di chi la riceve e di chi la esprime.|i",
+"Il bigliettino|Lascia un foglietto con una frase gentile a chi vive o lavora con te.|2|Una gentilezza inattesa crea un piccolo momento di gioia condivisa.|i",
+"Ti ho pensato|Manda a qualcuno un articolo, una canzone o un consiglio che pensi gli piacerà.|3|Far sapere a qualcuno che lo hai pensato rafforza il legame.|i",
+"Una risposta calorosa|Rispondi a un messaggio con più calore del solito, aggiungendo una domanda sincera.|3|Le piccole attenzioni quotidiane sono il tessuto delle relazioni.|i",
+"Ascolta senza aggiustare|Quando qualcuno ti racconta un problema, ascolta senza dare soluzioni.|10|Sentirsi ascoltati, prima che consigliati, è ciò che conforta di più.|i"
+],
+2: [
+"Il messaggio rimandato|Scrivi a un amico che non senti da mesi: «Ho pensato a te, come stai?».|5|Le ricerche mostrano che sottovalutiamo quanto l'altro sarà felice di sentirci.|i",
+"Aiuto senza richiesta|Offri un piccolo aiuto concreto a qualcuno: portare una borsa, tenere una porta, un favore.|5|Aiutare gli altri è uno dei modi più affidabili per sentirsi meglio.",
+"Lettera di gratitudine|Scrivi dieci righe di gratitudine a una persona importante per te. Mandarla è facoltativo.|15|La lettera di gratitudine è uno degli esercizi più studiati e più efficaci per il benessere.",
+"Un dono pronto|Scegli un oggetto in buono stato che non usi e preparalo per donarlo.|10|Donare dà un piacere più duraturo che tenere.",
+"Cinque rifiuti in meno|Durante una passeggiata raccogli 5 rifiuti con un sacchetto o un guanto e buttali.|10|Prendersi cura del luogo in cui si vive rafforza il senso di appartenenza.",
+"Lascio andare|Pensa a un piccolo torto ricevuto e scrivi «Lascio andare» spiegando perché.|5|Lasciare andare il rancore libera energie e migliora l'umore.",
+"Gentile con chi ti irrita|Rispondi con calma e gentilezza a una persona che ti irrita.|5|Scegliere la risposta invece di reagire è un allenamento potente di autoregolazione.",
+"Come stai, davvero?|Chiedi a una persona vicina come sta davvero, e ascolta la risposta fino in fondo.|10|Una domanda sincera apre spazio a conversazioni che contano.|i",
+"Ciò che apprezzo di te|Di' a qualcuno, a voce o per iscritto, una cosa che apprezzi di quella persona.|3|Dire l'apprezzamento ad alta voce rende più forte e più consapevole il legame.|i"
+],
+3: [
+"Merito pubblico|Riconosci davanti ad altri il merito di un collega o di un amico, in riunione o in un gruppo.|2|Dare credito in pubblico rafforza la fiducia e il clima del gruppo.",
+"Difendi chi non c'è|Se senti una critica ingiusta verso una persona assente, di' con calma qualcosa di positivo su di lei.|2|Prendere posizione con gentilezza allena il coraggio morale.",
+"Volontariato in miniatura|Cerca un'associazione della tua città e scrivi per chiedere come puoi dare una mano.|15|Fare la prima mossa verso il volontariato apre a un senso di significato.",
+"Gentilezza anonima|Fai una cosa gentile per qualcuno senza firmarti e senza che lo sappia.|10|La gentilezza senza riconoscimento nutre la motivazione che viene da dentro.",
+"Scusa, anche se è passato|Chiedi scusa per una cosa di cui ti dispiace, anche piccola e anche passata.|5|Scusarsi ripara i rapporti e alleggerisce chi lo fa.|i",
+"Ti voglio bene|Di' a una persona cara che le vuoi bene, a voce o per iscritto.|2|Esprimere affetto in modo esplicito rafforza i legami più importanti.|i",
+"Un'ora del tuo tempo|Proponi a una persona che sai in difficoltà un'ora del tuo tempo questa settimana.|5|Offrire tempo è uno dei doni più preziosi e più ricordati.|i",
+"Mi hai insegnato…|Di' a una persona cosa hai imparato da lei e come ti ha cambiato.|5|Riconoscere l'influenza degli altri dà significato al rapporto e a chi lo riceve.|i",
+"Una chiamata a chi è solo|Chiama un parente o un vicino anziano solo per chiacchierare un po'.|15|Pochi minuti di compagnia possono cambiare la giornata di chi è solo.|i"
+]
+}
+};
+</script>
+<script>
+(function(){
+/* ---------- costanti ---------- */
+const CATS = [
+  {id:"cor", name:"Corpo"}, {id:"men", name:"Mente"}, {id:"soc", name:"Sociale"},
+  {id:"dis", name:"Disciplina"}, {id:"cre", name:"Creatività"}, {id:"gen", name:"Gentilezza"}
+];
+const LV = {1:{name:"Soft", xp:10}, 2:{name:"Hard", xp:20}, 3:{name:"Coraggio", xp:35}};
+const catName = (id) => (CATS.find(c => c.id === id) || {name:"Mia"}).name;
+
+// costruzione delle sfide: id stabile = categoria + livello + posizione
+const CH = [];
+for(const c of Object.keys(RAW)) for(const l of [1,2,3]) RAW[c][l].forEach((s, i) => {
+  const [t, d, m, w, f] = s.split("|");
+  CH.push({id:c + l + "-" + String(i+1).padStart(2,"0"), c, l, o:i, t, d, m:Number(m), w, i:f === "i"});
+});
+const SOC_STEPS = CH.filter(x => x.c === "soc").length;
+
+const GREET = ["Cra cra, ciao!", "Si salta?", "Eccomi sulla ninfea!", "Che bello vederti!", "Oggi c'è una sorpresa per te."];
+const PRAISE = [
+  "Ci hai provato, ed è questo che conta.",
+  "Ogni piccolo salto allena il coraggio.",
+  "Non serviva farlo perfetto: serviva farlo.",
+  "Hai fatto un passo fuori dalla comodità. Si sente!",
+  "La fatica che hai sentito è il segno che stai imparando.",
+  "Un passo alla volta si arriva lontano.",
+  "L'impegno di oggi è il terreno della crescita di domani."
+];
+const QUOTES = [
+  "Le rane non saltano lontano al primo tentativo: saltano spesso.",
+  "Il coraggio non è non avere paura: è fare un passo piccolo insieme a lei.",
+  "Fatto oggi vale più di perfetto domani.",
+  "Le cose nuove sembrano grandi finché non le fai.",
+  "Ogni volta che provi, il tuo stagno si allarga.",
+  "Non serve sentirsi pronti per iniziare: ci si prepara iniziando.",
+  "La gentilezza che fai torna, spesso da strade inattese.",
+  "Anche i girini diventano rane, un giorno alla volta.",
+  "Sbagliare è il modo in cui il cervello prende la mira.",
+  "Le zone di comfort si allargano a piccoli salti, non a balzi."
+];
+const PLANS = ["Dopo il caffè del mattino", "Nella pausa di metà giornata", "Dopo pranzo, in ufficio", "Appena torno a casa", "Prima di cena, in cucina", "Stasera, prima di dormire"];
+const ASK = ["Com'è andata? Cosa hai scoperto?", "Cosa ti ha sorpreso?", "Come ti senti adesso?", "Lo rifaresti? Perché?", "Cosa è stato più facile del previsto?"];
+const REST = ["Va benissimo. Riposare fa parte del percorso.", "Nessun problema: domani ne pesco una più leggera.", "Oggi no, e va bene così. Ti aspetto sulla ninfea."];
+const MOODS = {1:"Faticosa", 2:"Così così", 3:"Bene"};
+const THEMES = {
+  cor:"Settimana del corpo", men:"Settimana della mente curiosa", soc:"Settimana del coraggio sociale",
+  dis:"Settimana della costanza", cre:"Settimana creativa", gen:"Settimana gentile"
+};
+const LVNAMES = ["Girino", "Primo salto", "Salto in lungo", "Esplora-stagni", "Cuore di ninfea", "Gran salto", "Voce dello stagno", "Leggenda dello stagno"];
+const ACC = [
+  {id:"cap", name:"Berretto"}, {id:"flower", name:"Fiore di ninfea"}, {id:"glasses", name:"Occhiali tondi"},
+  {id:"bow", name:"Papillon"}, {id:"crown", name:"Coroncina"}, {id:"leaf", name:"Cappello di foglia"}
+];
+
+/* ---------- stato salvato ---------- */
+const KEY = "ranocchia.v1";     // non cambiarla mai dopo la prima pubblicazione: è dove stanno i dati
+const app = document.getElementById("app");
+function fresh(){ return {
+  palette:"stagno", cats:CATS.map(c => c.id), diff:"auto", levels:[1,2], lvl:1, together:true,
+  remind:"18:30", notif:false, notified:null, days:{}, custom:[], acc:[], wear:null, badges:{},
+  theme:null, themeOffer:null, recapSeen:null, lastSeen:null, best:0
+}; }
+function load(){ try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(fresh(), JSON.parse(r)); }catch(e){} return fresh(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+
+/* ---------- utilità ---------- */
+const $ = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const reduced = () => { try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+function today(d){ d = d || new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function toDate(k){ const [y, m, d] = k.split("-").map(Number); return new Date(y, m-1, d); }
+function addDays(k, n){ const d = toDate(k); d.setDate(d.getDate() + n); return today(d); }
+function gap(a, b){ return Math.round((toDate(b) - toDate(a)) / 864e5); }
+function weekKey(k){ const d = toDate(k); const wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return today(d); }
+const fmtDay = (k, o) => toDate(k).toLocaleDateString("it-IT", o || {weekday:"long", day:"numeric", month:"long"});
+function toast(msg){ toast.at = Date.now(); const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("on"), 3500); }
+
+const allCh = () => CH.concat(S.custom || []);
+const chById = (id) => allCh().find(x => x.id === id);
+function chOf(r){ return chById(r.id) || {id:r.id, t:r.t, c:r.c, l:r.l, d:"", m:5, w:"", i:false}; }
+const doneDays = () => Object.keys(S.days).sort().filter(k => S.days[k].st === "done");
+const totalXp = () => doneDays().reduce((a, k) => a + (S.days[k].xp || 0), 0);
+function lvInfo(xp){
+  let n = 1, need = 60, acc = 0;
+  while(xp >= acc + need){ acc += need; n++; need = 60 + 30 * (n - 1); }
+  return {n, into:xp - acc, need, name:LVNAMES[Math.min(n - 1, LVNAMES.length - 1)]};
+}
+
+/* ---------- serie con "giorno jolly" (1 a settimana) ---------- */
+function streak(){
+  const t = today(), keys = Object.keys(S.days).sort();
+  if(!keys.length) return {n:0, jolly:false};
+  const first = keys[0];
+  let d = S.days[t] && S.days[t].st === "done" ? t : addDays(t, -1);
+  let n = 0; const used = new Set(), saved = new Set();
+  let pending = null;
+  while(d >= first){
+    const r = S.days[d];
+    if(r && r.st === "done"){ n++; if(pending){ saved.add(pending); pending = null; } }
+    else { const w = weekKey(d); if(used.has(w)) break; used.add(w); pending = w; }
+    d = addDays(d, -1);
+  }
+  return {n, jolly:saved.has(weekKey(t))};
+}
+
+/* ---------- scelta della sfida: autonomia + sfida ottimale + esposizione graduale ---------- */
+function levelWeights(x){
+  if(x < 1.5) return {1:.75, 2:.25, 3:0};
+  if(x < 2)   return {1:.5, 2:.45, 3:.05};
+  if(x < 2.5) return {1:.3, 2:.5, 3:.2};
+  return {1:.15, 2:.45, 3:.4};
+}
+function activeTheme(){ const t = today(); return S.theme && t >= S.theme.from && t <= S.theme.to ? S.theme : null; }
+function draw(exclude){
+  const t = today(), done = new Set(), recent = new Set();
+  for(const k of Object.keys(S.days)){ const r = S.days[k]; if(r.st === "done"){ done.add(r.id); if(gap(k, t) <= 30) recent.add(r.id); } }
+  let pool = allCh().filter(c => (S.together || !c.i) && !exclude.includes(c.id) && S.cats.includes(c.c));
+  if(!pool.length) pool = allCh().filter(c => !exclude.includes(c.id));
+  if(!pool.length) pool = allCh();
+  const allowed = S.diff === "auto" ? [1,2,3] : S.levels;
+  const W = S.diff === "auto" ? levelWeights(S.lvl) : {1:1, 2:1, 3:1};
+  const cats = [...new Set(pool.map(c => c.c))];
+  const th = activeTheme();
+  const cat = th && cats.includes(th.c) && Math.random() < .65 ? th.c : pick(cats);
+  const catPool = pool.filter(c => c.c === cat);
+  const lvAvail = [1,2,3].filter(l => allowed.includes(l) && catPool.some(c => c.l === l));
+  let lv = null;
+  if(lvAvail.length){
+    const tot = lvAvail.reduce((a, l) => a + (W[l] || 0), 0);
+    if(tot <= 0) lv = Math.min(...lvAvail);
+    else { let r = Math.random() * tot; for(const l of lvAvail){ r -= W[l] || 0; if(r <= 0){ lv = l; break; } } lv = lv || lvAvail[lvAvail.length - 1]; }
+  }
+  let cand = lv ? catPool.filter(c => c.l === lv) : catPool;
+  const notRecent = cand.filter(c => !recent.has(c.id)); if(notRecent.length) cand = notRecent;
+  const never = cand.filter(c => !done.has(c.id));
+  // sociale e coraggio: si sale per gradini, si propone il primo (o il secondo) gradino non ancora fatto
+  if((cat === "soc" || lv === 3) && never.length) return pick(never.sort((a, b) => a.o - b.o).slice(0, 2));
+  return pick(never.length ? never : cand);
+}
+function newRec(c, extra){ return Object.assign({id:c.id, t:c.t, c:c.c, l:c.l, st:"new", rr:0, plan:"", mood:0, note:"", xp:0, drawn:[c.id]}, extra || {}); }
+function todayRec(){
+  const t = today();
+  if(!S.days[t]){ S.days[t] = newRec(draw([])); save(); }
+  return S.days[t];
+}
+
+/* ---------- traguardi ---------- */
+const BADGES = [
+  {id:"first",   icon:"leaf",   name:"Primo salto",      how:"Completa la prima sfida",           ok:(x) => x.done >= 1},
+  {id:"s3",      icon:"flame",  name:"Tre di fila",      how:"Serie di 3 giorni",                 ok:(x) => x.streak >= 3},
+  {id:"s7",      icon:"flame",  name:"Una settimana",    how:"Serie di 7 giorni",                 ok:(x) => x.streak >= 7},
+  {id:"s30",     icon:"flame",  name:"Un mese di salti", how:"Serie di 30 giorni",                ok:(x) => x.streak >= 30},
+  {id:"all6",    icon:"grid",   name:"Giro dello stagno",how:"Una sfida in ogni categoria",       ok:(x) => x.cats >= 6},
+  {id:"brave",   icon:"shield", name:"Primo coraggio",   how:"Completa una sfida Coraggio",       ok:(x) => x.brave >= 1},
+  {id:"brave10", icon:"shield", name:"Cuor di rana",     how:"10 sfide Coraggio",                 ok:(x) => x.brave >= 10},
+  {id:"notes10", icon:"pen",    name:"Penna d'oro",      how:"Scrivi 10 note nel diario",         ok:(x) => x.notes >= 10},
+  {id:"with5",   icon:"users",  name:"In compagnia",     how:"5 sfide insieme a qualcuno",        ok:(x) => x.with >= 5},
+  {id:"maker",   icon:"plus",   name:"Inventore di sfide",how:"Aggiungi una sfida tua",           ok:(x) => x.custom >= 1},
+  {id:"d25",     icon:"star",   name:"Venticinque salti",how:"25 sfide completate",               ok:(x) => x.done >= 25},
+  {id:"d100",    icon:"star",   name:"Cento salti",      how:"100 sfide completate",              ok:(x) => x.done >= 100},
+  {id:"comeback",icon:"sun",    name:"Nuovo inizio",     how:"Riparti dopo una pausa di 3 giorni",ok:(x) => x.comeback},
+  {id:"theme",   icon:"cal",    name:"Tema riuscito",    how:"4 sfide nella settimana a tema",    ok:(x) => x.theme}
+];
+function facts(){
+  const ds = doneDays(), rs = ds.map(k => S.days[k]);
+  let comeback = false;
+  for(let i = 1; i < ds.length; i++) if(gap(ds[i-1], ds[i]) >= 4) comeback = true;
+  let theme = false;
+  if(S.theme) theme = ds.filter(k => k >= S.theme.from && k <= S.theme.to && S.days[k].c === S.theme.c).length >= 4;
+  return {done:rs.length, streak:Math.max(streak().n, S.best || 0), cats:new Set(rs.map(r => r.c)).size,
+    brave:rs.filter(r => r.l === 3).length, notes:rs.filter(r => r.note).length,
+    with:rs.filter(r => chOf(r).i).length, custom:(S.custom || []).length, comeback, theme};
+}
+function checkBadges(){
+  const f = facts(), got = [];
+  for(const b of BADGES) if(!S.badges[b.id] && b.ok(f)){ S.badges[b.id] = today(); got.push(b); }
+  return got;
+}
+
+/* ---------- icone SVG (tratto 2.2, stile unico) ---------- */
+const sv = (p, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra || ""}>${p}</svg>`;
+const ICON = {
+  cor: sv('<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>'),
+  men: sv('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3Z"/>'),
+  soc: sv('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.2c2.3.3 4 2.3 4 4.8"/>'),
+  dis: sv('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>'),
+  cre: sv('<path d="M4 20l1-4L16 5l3 3L8 19l-4 1Z"/><path d="M14 7l3 3"/>'),
+  gen: sv('<path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z"/>'),
+  mia: sv('<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7Z"/>'),
+  card: sv('<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M12 8.5l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4Z"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>'),
+  book: sv('<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17a3 3 0 0 1 3-3h10"/>'),
+  chart: sv('<path d="M5 20V11M12 20V5M19 20v-7"/>'),
+  gear: sv('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'),
+  back: sv('<path d="M15 5l-7 7 7 7"/>'),
+  next: sv('<path d="M9 5l7 7-7 7"/>'),
+  clock: sv('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  shuffle: sv('<path d="M3 7h3.5c4 0 5 10 9 10H21M3 17h3.5c1.6 0 2.7-1.6 3.6-3.5M13.9 10.5C14.8 8.6 15.9 7 17.5 7H21"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/>'),
+  moon: sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>'),
+  check: sv('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  pin: sv('<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/>'),
+  users: sv('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.2c2.3.3 4 2.3 4 4.8"/>'),
+  flame: sv('<path d="M12 2.5c1 3.6 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.2 1.1-3.8 2.2-4.8 0 2 1 3.2 2.1 3.2 0-3.2-1-6.3 1.2-9.4Z"/>'),
+  shield: sv('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6Z"/><path d="M9 12l2.2 2.2L15.5 10"/>'),
+  star: sv('<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7Z"/>'),
+  leaf: sv('<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15"/><path d="M5 19l7-7"/>'),
+  grid: sv('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>'),
+  pen: sv('<path d="M4 20l1-4L16 5l3 3L8 19l-4 1Z"/>'),
+  plus: sv('<path d="M12 5v14M5 12h14"/>'),
+  trash: sv('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  down: sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  up: sv('<path d="M12 15V4M7 9l5-5 5 5M5 20h14"/>'),
+  bell: sv('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 21h4"/>'),
+  cal: sv('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  lock: sv('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  gift: sv('<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-5-4-5-1.5S10 9 12 9Zm0 0c1.5-3 5-4 5-1.5S14 9 12 9Z"/>'),
+  eye: sv('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>'),
+  undo: sv('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>')
+};
+const catIcon = (c) => ICON[c] || ICON.mia;
+function faceSvg(n){
+  const m = {1:'<path d="M8 16.5q2-2 4 0t4 0"/>', 2:'<path d="M8.5 15.5h7"/>', 3:'<path d="M8 14.5q4 4 8 0"/>'}[n];
+  return sv(`<circle cx="12" cy="12" r="9.5"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/>${m}`);
+}
+
+/* ---------- la mascotte: Ranocchia (disegno originale) ---------- */
+// mood: hi · happy · cheer · proud · sleepy · think · gentle. wear: accessorio indossato.
+let mid = 0;
+function mascot(mood, size, wear){
+  mood = mood || "hi";
+  if(wear === undefined) wear = S.wear;
+  const id = "m" + (++mid), K = "#1A1A1A", G = "#63B84A", GS = "#3E8E2C", BL = "#E4F6C6", CK = "#F49AB2", RED = "#8E2238";
+  const body = "M18 106 Q18 70 48 64 Q70 60 92 64 Q122 70 122 106 Q122 142 70 144 Q18 142 18 106 Z";
+  const bumps = '<circle cx="44" cy="56" r="20"/><circle cx="96" cy="56" r="20"/>';
+  const ARMS = {
+    hi:    ["M26 112 Q12 120 12 134", "M114 108 Q132 96 128 74"],
+    happy: ["M26 112 Q12 118 10 130", "M114 112 Q128 118 130 130"],
+    cheer: ["M26 108 Q10 92 14 70", "M114 108 Q130 92 126 70"],
+    proud: ["M26 106 Q6 116 24 128", "M114 106 Q134 116 116 128"],
+    sleepy:["M28 116 Q24 128 30 136", "M112 116 Q116 128 110 136"],
+    think: ["M26 112 Q12 120 12 134", "M112 116 Q126 112 104 104"],
+    gentle:["M26 110 Q32 130 56 126", "M114 110 Q108 130 84 126"]
+  }[mood] || [];
+  const front = mood === "gentle" || mood === "think";
+  const arm = (d) => { const e = d.split(" ").slice(-2).map(Number);
+    return `<path d="${d}" stroke="${K}" stroke-width="12" stroke-linecap="round" fill="none"/><path d="${d}" stroke="${G}" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="${e[0]}" cy="${e[1]}" r="6.5" fill="${G}" stroke="${K}" stroke-width="2.6"/>`; };
+  const arms = ARMS.map(arm).join("");
+  const open = (x, dx, dy) => `<circle cx="${x}" cy="54" r="12.5" fill="#fff" stroke="${K}" stroke-width="2.8"/><circle cx="${x+dx}" cy="${55+dy}" r="6" fill="${K}"/><circle cx="${x+dx+2}" cy="${52+dy}" r="2" fill="#fff"/>`;
+  const shut = (x, up) => up ? `<path d="M${x-9} 58 Q${x} 45 ${x+9} 58" fill="none" stroke="${K}" stroke-width="3.6" stroke-linecap="round"/>`
+                             : `<path d="M${x-9} 53 Q${x} 61 ${x+9} 53" fill="none" stroke="${K}" stroke-width="3.6" stroke-linecap="round"/>`;
+  let eyes, mouth;
+  const smile = `<path d="M48 98 Q70 114 92 98" fill="none" stroke="${K}" stroke-width="3.4" stroke-linecap="round"/>`;
+  const big = `<path d="M47 95 Q70 124 93 95 Q70 103 47 95 Z" fill="${RED}" stroke="${K}" stroke-width="3" stroke-linejoin="round"/><path d="M60 108 Q70 104 80 108 Q70 116 60 108 Z" fill="#F27A93"/>`;
+  switch(mood){
+    case "happy":  eyes = open(44, 1, 1) + open(96, -1, 1); mouth = big; break;
+    case "cheer":  eyes = shut(44, 1) + shut(96, 1); mouth = big; break;
+    case "proud":  eyes = shut(44, 1) + shut(96, 1); mouth = `<path d="M52 97 Q70 110 88 96" fill="none" stroke="${K}" stroke-width="3.4" stroke-linecap="round"/>`; break;
+    case "sleepy": eyes = shut(44, 0) + shut(96, 0); mouth = `<ellipse cx="70" cy="102" rx="5" ry="4" fill="${RED}" stroke="${K}" stroke-width="2.6"/>`; break;
+    case "think":  eyes = open(44, -3, -4) + open(96, -3, -4); mouth = `<path d="M58 102 Q66 99 76 103" fill="none" stroke="${K}" stroke-width="3.2" stroke-linecap="round"/>`; break;
+    case "gentle": eyes = open(44, 1, 2) + open(96, -1, 2); mouth = `<path d="M56 99 Q70 108 84 99" fill="none" stroke="${K}" stroke-width="3.2" stroke-linecap="round"/>`; break;
+    default:       eyes = open(44, 1, 1) + open(96, -1, 1); mouth = smile;
+  }
+  const spark = (x, y, s) => `<path d="M${x} ${y-s} Q${x} ${y} ${x+s} ${y} Q${x} ${y} ${x} ${y+s} Q${x} ${y} ${x-s} ${y} Q${x} ${y} ${x} ${y-s} Z" fill="#fff" stroke="${K}" stroke-width="2"/>`;
+  const zz = (x, y, s) => `<path d="M${x} ${y} h${s} l-${s} ${s} h${s}" fill="none" stroke="${K}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const heart = (x, y, s) => `<path d="M${x} ${y+s*.9} C${x-s*1.5} ${y-s*.1} ${x-s*.8} ${y-s*1.2} ${x} ${y-s*.35} C${x+s*.8} ${y-s*1.2} ${x+s*1.5} ${y-s*.1} ${x} ${y+s*.9} Z" fill="#F0607E" stroke="${K}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  let extras = "";
+  if(mood === "cheer") extras = spark(14, 44, 8) + spark(128, 40, 7) + spark(22, 18, 5);
+  else if(mood === "proud") extras = spark(14, 40, 7) + spark(126, 36, 8);
+  else if(mood === "sleepy") extras = zz(112, 22, 9) + zz(126, 8, 6);
+  else if(mood === "hi") extras = spark(134, 58, 5);
+  else if(mood === "think") extras = `<circle cx="120" cy="30" r="3" fill="#fff" stroke="${K}" stroke-width="2"/><circle cx="128" cy="18" r="5" fill="#fff" stroke="${K}" stroke-width="2"/>`;
+  const W = {
+    cap:    `<path d="M54 64 Q70 28 86 64 Z" fill="var(--deep,#1E5A66)" stroke="${K}" stroke-width="3" stroke-linejoin="round"/><path d="M52 62 H88" stroke="${K}" stroke-width="6" stroke-linecap="round"/><path d="M52 62 H88" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="70" cy="34" r="6" fill="#fff" stroke="${K}" stroke-width="2.6"/>`,
+    crown:  `<path d="M54 63 L55 40 L63 50 L70 34 L77 50 L85 40 L86 63 Z" fill="#F4C430" stroke="${K}" stroke-width="3" stroke-linejoin="round"/><circle cx="70" cy="55" r="3" fill="#E8574A" stroke="${K}" stroke-width="1.8"/>`,
+    flower: [0,72,144,216,288].map(a => `<circle cx="${(30 + 8*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(36 + 8*Math.sin(a*Math.PI/180)).toFixed(1)}" r="6.5" fill="#F7A1C4" stroke="${K}" stroke-width="2.2"/>`).join("") + `<circle cx="30" cy="36" r="4.5" fill="#FFD54A" stroke="${K}" stroke-width="2"/>`,
+    glasses:`<circle cx="44" cy="54" r="15.5" fill="none" stroke="${K}" stroke-width="3.6"/><circle cx="96" cy="54" r="15.5" fill="none" stroke="${K}" stroke-width="3.6"/><path d="M59.5 52 Q70 45 80.5 52" fill="none" stroke="${K}" stroke-width="3.6"/>`,
+    bow:    `<path d="M70 118 L53 109 L53 127 Z M70 118 L87 109 L87 127 Z" fill="var(--deep,#1E5A66)" stroke="${K}" stroke-width="2.8" stroke-linejoin="round"/><circle cx="70" cy="118" r="4.5" fill="#fff" stroke="${K}" stroke-width="2.4"/>`,
+    leaf:   `<path d="M70 64 V24" stroke="${K}" stroke-width="6" stroke-linecap="round"/><path d="M70 64 V24" stroke="${GS}" stroke-width="2.4" stroke-linecap="round"/><path d="M20 26 Q70 -2 120 26 Q96 34 74 28 L70 18 L64 30 Q42 34 20 26 Z" fill="#7CCB5E" stroke="${K}" stroke-width="3" stroke-linejoin="round"/><path d="M40 22 Q56 16 66 20 M100 22 Q86 16 76 20" fill="none" stroke="${GS}" stroke-width="2.2" stroke-linecap="round"/>`
+  };
+  const acc = wear && W[wear] ? W[wear] : "";
+  const label = {hi:"saluta", happy:"è felice", cheer:"festeggia", proud:"è fiera", sleepy:"sonnecchia", think:"ci pensa", gentle:"ti incoraggia"}[mood] || "";
+  return `<svg class="mascot" viewBox="0 0 140 160" width="${size}" height="${Math.round(size*160/140)}" role="img" aria-label="Ranocchia ${label}">
+    <defs><clipPath id="${id}"><path d="${body}"/>${bumps}</clipPath></defs>
+    ${extras}
+    <ellipse cx="42" cy="146" rx="18" ry="7" fill="${G}" stroke="${K}" stroke-width="3"/><ellipse cx="98" cy="146" rx="18" ry="7" fill="${G}" stroke="${K}" stroke-width="3"/>
+    ${front ? "" : arms}
+    <g fill="${K}" stroke="${K}" stroke-width="7" stroke-linejoin="round"><path d="${body}"/>${bumps}</g>
+    <g fill="${G}"><path d="${body}"/>${bumps}</g>
+    <g clip-path="url(#${id})">
+      <ellipse cx="70" cy="128" rx="34" ry="19" fill="${BL}"/>
+      <path d="M106 34 Q142 80 116 150 L150 150 L150 20 Z" fill="${GS}"/>
+      <circle cx="64" cy="74" r="4" fill="${GS}"/><circle cx="76" cy="80" r="2.6" fill="${GS}"/>
+    </g>
+    <path d="M30 88 Q31 78 38 73" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <ellipse cx="32" cy="98" rx="7" ry="4.5" fill="${CK}"/><ellipse cx="108" cy="98" rx="7" ry="4.5" fill="${CK}"/>
+    ${eyes}${mouth}
+    ${front ? arms : ""}
+    ${mood === "gentle" ? heart(70, 124, 9) : ""}
+    ${acc}
+  </svg>`;
+}
+
+/* ---------- palette di colori ---------- */
+const PALETTES = [
+  {id:"stagno",   name:"Stagno",   sub:"Verde canneto e blu profondo", bg:"#C9E9C0", deep:"#1E5A66"},
+  {id:"ninfea",   name:"Ninfea",   sub:"Rosa fiore e prugna",         bg:"#F8D6DE", deep:"#8C2D55"},
+  {id:"tramonto", name:"Tramonto sul lago", sub:"Albicocca e lilla",  bg:"#FBD9B4", deep:"#6B3A8C"},
+  {id:"muschio",  name:"Muschio",  sub:"Oliva chiaro e sottobosco",   bg:"#DDE4B2", deep:"#4A5A1C"},
+  {id:"pioggia",  name:"Pioggia",  sub:"Glicine e indaco",            bg:"#E1DAF4", deep:"#4B3A8F"}
+];
+function applyPalette(){
+  try{
+    document.documentElement.setAttribute("data-palette", S.palette);
+    const p = PALETTES.find(p => p.id === S.palette) || PALETTES[0];
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", p.bg);
+  }catch(e){}
+}
+
+/* ---------- navigazione: il gesto "indietro" del telefono segue le schermate ---------- */
+const DEPTH = {home:0, plan:1, reflect:1, yay:1, diary:1, progress:1, settings:1, recap:2, mine:2};
+let curDepth = 0, fromPop = false, skipPop = null;
+function screen(st){
+  if(fromPop) return;
+  const d = DEPTH[st.s];
+  try{
+    if(d > curDepth) history.pushState(st, "");
+    else if(d === curDepth) history.replaceState(st, "");
+    else { skipPop = st; history.go(d - curDepth); }
+  }catch(e){}
+  curDepth = d;
+}
+function showState(st){
+  st = st || {s:"home"};
+  const r = S.days[today()];
+  if(st.s === "plan" && r && r.st === "flip") plan();
+  else if(st.s === "reflect" && r && r.st === "ok") reflect();
+  else if(st.s === "diary") diary(st.m);
+  else if(st.s === "progress") progress();
+  else if(st.s === "settings") settings();
+  else if(st.s === "recap") recap();
+  else if(st.s === "mine") mine();
+  else home();
+}
+window.addEventListener("popstate", (e) => {
+  if(skipPop){ const st = skipPop; skipPop = null; try{ history.replaceState(st, ""); }catch(err){} return; }
+  let st = e.state || {s:"home"};
+  if(st.s === "yay") st = {s:"home"};     // la festa non si riprende: si torna a Oggi
+  fromPop = true;
+  try{ showState(st); } finally { fromPop = false; }
+  curDepth = DEPTH[st.s] || 0;
+});
+function mount(v, focus){
+  if(Date.now() - (toast.at || 0) > 400) document.getElementById("toast").classList.remove("on");
+  app.innerHTML = ""; app.appendChild(v);
+  v.querySelectorAll(".tabbar").forEach(el => app.appendChild(el));
+  window.scrollTo(0, 0);
+  if(focus !== false){ try{ app.focus({preventScroll:true}); }catch(e){} }
+}
+function tabBar(active){
+  const tabs = [["home","Oggi",ICON.card,home],["diary","Diario",ICON.book,() => diary()],["progress","Progressi",ICON.chart,progress],["settings","Impostazioni",ICON.gear,() => settings()]];
+  const bar = $(`<nav class="tabbar" aria-label="Sezioni">${tabs.map(([id, l, ic]) => `<button class="tab ${id === active ? "on" : ""}" data-t="${id}" ${id === active ? 'aria-current="page"' : ""}>${ic}<span>${l}</span></button>`).join("")}</nav>`);
+  bar.querySelectorAll(".tab").forEach(b => b.onclick = () => { if(b.dataset.t !== active) tabs.find(t => t[0] === b.dataset.t)[3](); else window.scrollTo({top:0, behavior:reduced() ? "auto" : "smooth"}); });
+  return bar;
+}
+const backBtn = (label) => `<button class="back" id="bk">${ICON.back}${esc(label)}</button>`;
+
+/* ---------- pezzi della carta ---------- */
+function tagsOf(c){
+  return `<div class="tags">
+    <span class="tag">${catIcon(c.c)}${esc(catName(c.c))}</span>
+    <span class="tag lv">${esc(LV[c.l].name)}</span>
+    <span class="tag">${ICON.clock}${c.m} min</span>
+    ${c.i ? `<span class="tag">${ICON.users}Con qualcuno</span>` : ""}
+    ${c.own ? `<span class="tag">${ICON.mia}Tua</span>` : ""}
+  </div>`;
+}
+function stepOf(c){
+  if(c.c !== "soc" || c.own) return "";
+  const n = (c.l - 1) * 9 + c.o + 1;
+  return `<p class="small">Gradino ${n} di ${SOC_STEPS} della scala sociale: si sale un passo alla volta.</p>`;
+}
+function chBody(c){
+  return `${tagsOf(c)}<h2>${esc(c.t)}</h2><p class="d">${esc(c.d)}</p>
+    ${c.w ? `<p class="why"><span class="label">Perché aiuta</span>${esc(c.w)}</p>` : ""}${stepOf(c)}`;
+}
+const PADS = `<svg class="pads" viewBox="0 0 150 110" aria-hidden="true"><ellipse cx="75" cy="78" rx="62" ry="22" fill="#7CCB5E" stroke="#1A1A1A" stroke-width="3"/><path d="M75 78 L118 62" stroke="#1A1A1A" stroke-width="3"/><ellipse cx="30" cy="34" rx="22" ry="8" fill="#7CCB5E" stroke="#1A1A1A" stroke-width="3"/><ellipse cx="124" cy="26" rx="18" ry="6.5" fill="#7CCB5E" stroke="#1A1A1A" stroke-width="3"/><text x="75" y="70" text-anchor="middle" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="54" fill="#fff" stroke="#1A1A1A" stroke-width="3" paint-order="stroke">?</text></svg>`;
+
+/* ---------- OGGI ---------- */
+let sleepyOnce = false;
+function home(){
+  screen({s:"home"});
+  const t = today(), r = todayRec(), c = chOf(r), st = streak(), th = activeTheme();
+  let mood = "hi", say = pick(GREET);
+  if(sleepyOnce){ mood = "sleepy"; say = "Mi ero appisolata sulla ninfea… che bello rivederti!"; sleepyOnce = false; }
+  else if(r.st === "flip"){ mood = "think"; say = "Che ne dici? Scegli tu."; }
+  else if(r.st === "ok"){ mood = "happy"; say = "Hai un piano. Ce la puoi fare!"; }
+  else if(r.st === "done"){ mood = Object.values(S.badges).includes(t) ? "proud" : "happy"; say = "Fatto! Che salto!"; }
+  else if(r.st === "skip"){ mood = "gentle"; say = pick(REST); }
+  const dow = toDate(t).getDay(), isNew = dow === 1 || toDate(t).getDate() === 1;
+  const offerTheme = isNew && !th && S.themeOffer !== t;
+  const week = Object.keys(S.days).filter(k => gap(k, t) < 7 && S.days[k].st === "done").length;
+  const offerRecap = (dow === 0 || dow === 1) && week > 0 && (!S.recapSeen || gap(S.recapSeen, t) > 2);
+  const v = $(`<div class="pop">
+    <header class="top">
+      <div class="brand">${mascot("happy", 44)}<h1 class="logo">Ranocchia</h1></div>
+      <div class="stats">
+        <span class="chip" aria-label="Serie: ${st.n} giorni">${ICON.flame}${st.n}</span>
+        <span class="chip ${st.jolly ? "off" : ""}" aria-label="Giorno jolly della settimana: ${st.jolly ? "già usato" : "disponibile"}">${ICON.shield}${st.jolly ? "Jolly usato" : "Jolly pronto"}</span>
+      </div>
+    </header>
+    <section class="hero" aria-label="Ranocchia">
+      <div><span class="label">${esc(fmtDay(t))}</span><p class="say">${esc(say)}</p></div>
+      ${mascot(mood, 108).replace('class="mascot"', 'class="mascot wig"')}
+    </section>
+    <section id="card" aria-label="La sfida di oggi"></section>
+    ${th ? `<p class="small" style="margin-top:14px">${ICON.cal.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} ${esc(THEMES[th.c])}, fino a ${esc(fmtDay(th.to, {weekday:"long", day:"numeric"}))}.</p>` : ""}
+    ${offerTheme ? `<div class="card" style="margin-top:22px" id="theme">
+      <span class="label">Nuovo inizio</span>
+      <h3>Ti va una settimana a tema?</h3>
+      <p>Per 7 giorni ti propongo più spesso sfide di una categoria. È facoltativo.</p>
+      <div class="opts" style="margin-top:12px">${CATS.map(k => `<button class="opt" data-th="${k.id}">${catIcon(k.id)}${esc(k.name)}</button>`).join("")}</div>
+      <div class="acts"><button class="btn btn-quiet" id="nothx">No, grazie</button></div>
+    </div>` : ""}
+    ${offerRecap ? `<div class="card" style="margin-top:22px">
+      <span class="label">Riepilogo</span><h3>La tua settimana sullo stagno</h3>
+      <p>${week === 1 ? "1 sfida fatta" : week + " sfide fatte"} negli ultimi 7 giorni. Rivediamo insieme i momenti migliori?</p>
+      <div class="acts"><button class="btn btn-ghost" id="recap">${ICON.star}Apri il riepilogo</button></div>
+    </div>` : ""}
+    <p class="foot">${ICON.eye}<span>Le tue sfide sono private: restano solo su questo telefono, nessuno le vede.</span></p>
+  </div>`);
+  renderCard(v.querySelector("#card"), r, c);
+  v.querySelectorAll("[data-th]").forEach(b => b.onclick = () => {
+    S.theme = {c:b.dataset.th, from:t, to:addDays(t, 6)}; S.themeOffer = t;
+    // la sfida di oggi resta quella pescata: il tema vale da domani se l'hai già girata
+    if(r.st === "new"){ S.days[t] = newRec(draw([])); }
+    save(); toast(THEMES[b.dataset.th] + ": si parte!"); home();
+  });
+  const nt = v.querySelector("#nothx"); if(nt) nt.onclick = () => { S.themeOffer = t; save(); home(); };
+  const rc = v.querySelector("#recap"); if(rc) rc.onclick = recap;
+  v.appendChild(tabBar("home"));
+  mount(v, false);
+}
+function renderCard(box, r, c){
+  if(r.st === "new"){
+    box.innerHTML = `<div class="flip" id="flip"><div class="flip-in">
+      <div class="face front"><button class="cover" id="turn" aria-label="Gira la carta e scopri la sfida di oggi">${PADS}<b>La sfida di oggi</b><span>Tocca per girarla</span></button></div>
+      <div class="face back" aria-hidden="true"><div class="ch">${chBody(c)}</div></div>
+    </div></div>`;
+    box.querySelector("#turn").onclick = () => {
+      r.st = "flip"; save();
+      if(reduced()){ home(); return; }
+      box.querySelector("#flip").classList.add("on");
+      const id = r.id;
+      setTimeout(() => { const now = S.days[today()]; if(now && now.id === id && history.state && history.state.s === "home") home(); }, 650);
+    };
+    return;
+  }
+  if(r.st === "flip"){
+    box.innerHTML = `<div class="ch">${chBody(c)}</div>
+      <div class="acts">
+        <button class="btn btn-deep" id="yes">${ICON.check}Accetto</button>
+        <div class="acts2">
+          <button class="btn btn-ghost" id="again" ${r.rr ? "disabled" : ""} aria-describedby="rrh">${ICON.shuffle}Ripesca</button>
+          <button class="btn btn-ghost" id="no">${ICON.moon}Non oggi</button>
+        </div>
+        <p class="small" id="rrh">${r.rr ? "Hai già ripescato oggi: questa è la sfida del giorno." : "Puoi ripescare una volta al giorno."}</p>
+      </div>`;
+    box.querySelector("#yes").onclick = plan;
+    box.querySelector("#again").onclick = () => {
+      if(r.rr) return;
+      const nc = draw(r.drawn || [r.id]);
+      S.days[today()] = newRec(nc, {st:"flip", rr:1, drawn:(r.drawn || [r.id]).concat(nc.id)});
+      save(); toast("Ecco un'altra sfida."); home();
+    };
+    box.querySelector("#no").onclick = () => { r.st = "skip"; S.lvl = Math.max(1, S.lvl - .3); save(); home(); };
+    return;
+  }
+  if(r.st === "ok"){
+    box.innerHTML = `<div class="ch">${chBody(c)}
+        <p class="plan">${ICON.pin}<span><b>Il tuo piano:</b> ${esc(r.plan || "quando ti va, oggi")}</span></p></div>
+      <div class="acts">
+        <button class="btn btn-deep" id="did">${ICON.check}Fatto!</button>
+        <div class="acts2"><button class="btn btn-ghost" id="replan">${ICON.clock}Cambia piano</button><button class="btn btn-ghost" id="no">${ICON.moon}Non oggi</button></div>
+      </div>`;
+    box.querySelector("#did").onclick = reflect;
+    box.querySelector("#replan").onclick = () => { r.st = "flip"; save(); plan(); };
+    box.querySelector("#no").onclick = () => { r.st = "skip"; S.lvl = Math.max(1, S.lvl - .3); save(); home(); };
+    return;
+  }
+  if(r.st === "done"){
+    box.innerHTML = `<div class="ch">
+        <span class="stamp">${ICON.check}Fatta!</span>
+        ${tagsOf(c)}<h2>${esc(c.t)}</h2>
+        ${r.mood ? `<span class="mface">${faceSvg(r.mood)}${esc(MOODS[r.mood])}</span>` : ""}
+        ${r.note ? `<p class="why"><span class="label">La tua nota</span>${esc(r.note)}</p>` : ""}
+        <p>Domani ti aspetta una nuova sfida a sorpresa.</p>
+      </div>
+      <div class="acts"><button class="btn btn-ghost" id="dia">${ICON.book}Apri il diario</button></div>`;
+    box.querySelector("#dia").onclick = () => diary();
+    return;
+  }
+  // skip
+  box.innerHTML = `<div class="ch">
+      <span class="stamp rest">${ICON.moon}Oggi riposo</span>
+      <h2>Va bene così.</h2>
+      <p>Saltare un giorno non cancella niente: hai un giorno jolly a settimana e la prossima sfida sarà un po' più leggera.</p>
+    </div>
+    <div class="acts"><button class="btn btn-ghost" id="undo">${ICON.undo}Ci ho ripensato</button></div>`;
+  box.querySelector("#undo").onclick = () => { r.st = "flip"; S.lvl = Math.min(3, S.lvl + .3); save(); home(); };
+}
+
+/* ---------- QUANDO E DOVE (intenzione di attuazione) ---------- */
+function plan(){
+  const r = S.days[today()]; if(!r || (r.st !== "flip" && r.st !== "ok")) return home();
+  screen({s:"plan"});
+  const c = chOf(r);
+  let choice = r.plan || "";
+  const v = $(`<div class="pop">
+    ${backBtn("Oggi")}
+    <div class="page-h"><span class="label">Hai accettato</span><h2>Quando e dove la farai?</h2>
+      <p>${esc(c.t)}. Decidere un momento preciso rende molto più probabile farlo davvero.</p></div>
+    <div class="opts" role="group" aria-label="Frasi pronte">${PLANS.map(p => `<button class="opt" aria-pressed="${p === choice}" data-p="${esc(p)}"><span class="ck">${ICON.check}</span>${esc(p)}</button>`).join("")}</div>
+    <div class="field" style="margin-top:18px">
+      <label for="own">Oppure scrivilo con parole tue</label>
+      <input class="in" id="own" maxlength="80" autocomplete="off" placeholder="Es. Dopo la riunione delle 11, alla macchinetta" value="${PLANS.includes(choice) ? "" : esc(choice)}">
+      <span class="help">Formula utile: «Quando succede X, farò Y».</span>
+    </div>
+    <div class="acts">
+      <button class="btn btn-deep" id="ok">${ICON.check}Salva il piano</button>
+      <button class="btn btn-quiet" id="skip">Salta, decido dopo</button>
+    </div>
+  </div>`);
+  const own = v.querySelector("#own");
+  v.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    choice = b.dataset.p; own.value = "";
+    v.querySelectorAll(".opt").forEach(x => x.setAttribute("aria-pressed", x === b));
+  });
+  own.oninput = () => { if(own.value.trim()){ choice = ""; v.querySelectorAll(".opt").forEach(x => x.setAttribute("aria-pressed", "false")); } };
+  const go = (p) => { r.st = "ok"; r.plan = p; save(); toast("Piano salvato. Ti aspetto lì!"); home(); };
+  v.querySelector("#ok").onclick = () => go(own.value.trim() || choice);
+  own.onkeydown = (e) => { if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); go(own.value.trim() || choice); } };
+  v.querySelector("#skip").onclick = () => go("");
+  v.querySelector("#bk").onclick = home;
+  mount(v);
+}
+
+/* ---------- RIFLESSIONE ---------- */
+function reflect(){
+  const r = S.days[today()]; if(!r || r.st !== "ok") return home();
+  screen({s:"reflect"});
+  const c = chOf(r), q = pick(ASK);
+  let mood = 0;
+  const v = $(`<div class="pop">
+    ${backBtn("Oggi")}
+    <div class="page-h"><span class="label">${esc(c.t)}</span><h2>Com'è andata?</h2></div>
+    <div class="react">${mascot("happy", 100)}</div>
+    <div class="faces" role="group" aria-label="Come è andata">${[1,2,3].map(n => `<button class="faceb" aria-pressed="false" data-m="${n}">${faceSvg(n)}<span>${MOODS[n]}</span></button>`).join("")}</div>
+    <div class="field" style="margin-top:18px">
+      <label for="note">${esc(q)}</label>
+      <textarea class="in" id="note" maxlength="600" placeholder="Due righe bastano."></textarea>
+      <span class="help">Facoltativo. Scrivere aiuta ad assaporare il momento (+5 XP).</span>
+    </div>
+    <div class="acts"><button class="btn btn-deep" id="save">${ICON.star}Salva e festeggia</button></div>
+  </div>`);
+  v.querySelectorAll(".faceb").forEach(b => b.onclick = () => {
+    mood = Number(b.dataset.m);
+    v.querySelectorAll(".faceb").forEach(x => x.setAttribute("aria-pressed", x === b));
+  });
+  v.querySelector("#save").onclick = () => complete(mood, v.querySelector("#note").value);
+  v.querySelector("#bk").onclick = home;
+  mount(v);
+}
+function complete(mood, note){
+  const t = today(), r = S.days[t];
+  if(!r || r.st === "done") return home();
+  const before = lvInfo(totalXp()).n, firstEver = doneDays().length === 0;
+  r.st = "done"; r.mood = mood || 0; r.note = String(note || "").trim().slice(0, 600);
+  r.xp = LV[r.l].xp + (r.note ? 5 : 0); r.at = Date.now();
+  S.lvl = Math.min(3, S.lvl + (r.l >= Math.round(S.lvl) ? .2 : .1));
+  S.best = Math.max(S.best || 0, streak().n);
+  const badges = checkBadges();
+  const after = lvInfo(totalXp()).n;
+  // sorpresa: la prima volta sempre, poi circa 1 volta su 3. Mai a pagamento, mai con il timer.
+  let surprise = null;
+  const locked = ACC.filter(a => !S.acc.includes(a.id));
+  if(firstEver || Math.random() < .33){
+    if(locked.length && (firstEver || Math.random() < .6)){ const a = pick(locked); S.acc.push(a.id); surprise = {type:"acc", a}; }
+    else surprise = {type:"quote", text:pick(QUOTES)};
+  }
+  save();
+  yay({xp:r.xp, up:after > before ? after : 0, badges, surprise});
+}
+function yay(res){
+  screen({s:"yay"});
+  const st = streak(), L = lvInfo(totalXp());
+  const proud = res.up || res.badges.length;
+  const v = $(`<div class="pop">
+    <div class="react">${mascot(proud ? "proud" : "cheer", 150)}</div>
+    <div class="page-h" style="text-align:center"><span class="label">Sfida completata</span><h2>${esc(pick(PRAISE))}</h2></div>
+    <p class="big-xp">+${res.xp} XP</p>
+    <div class="card" style="margin-top:16px">
+      <p><b>${esc(L.name)}</b> · livello ${L.n}</p>
+      <div class="meter" style="margin:8px 0" role="progressbar" aria-label="Avanzamento del livello" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}"><i style="width:${Math.round(L.into / L.need * 100)}%"></i></div>
+      <p class="small">${L.into} di ${L.need} XP per il prossimo livello · serie di ${st.n} ${st.n === 1 ? "giorno" : "giorni"}</p>
+    </div>
+    ${res.up ? `<div class="gift"><span class="label">Nuovo livello</span><p class="quote">Sei al livello ${res.up}: ${esc(lvInfo(totalXp()).name)}!</p></div>` : ""}
+    ${res.badges.map(b => `<div class="gift"><span class="label">Nuovo traguardo</span><div class="badge" style="box-shadow:none"><span class="bi">${ICON[b.icon]}</span><b>${esc(b.name)}</b><span>${esc(b.how)}</span></div></div>`).join("")}
+    ${res.surprise && res.surprise.type === "acc" ? `<div class="gift"><span class="label">${ICON.gift.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} Sorpresa!</span>
+        ${mascot("happy", 90, res.surprise.a.id)}<p class="quote">Ranocchia ha trovato: ${esc(res.surprise.a.name)}</p>
+        <button class="btn btn-ghost" id="wear">Indossalo adesso</button></div>` : ""}
+    ${res.surprise && res.surprise.type === "quote" ? `<div class="gift"><span class="label">Una frase per te</span><p class="quote">«${esc(res.surprise.text)}»</p></div>` : ""}
+    <div class="acts"><button class="btn btn-deep" id="home">Torna a Oggi</button></div>
+  </div>`);
+  const w = v.querySelector("#wear");
+  if(w) w.onclick = () => { S.wear = res.surprise.a.id; save(); w.disabled = true; w.textContent = "Indossato!"; };
+  v.querySelector("#home").onclick = home;
+  mount(v);
+}
+
+/* ---------- DIARIO ---------- */
+function diary(m){
+  const t = today();
+  m = m || t.slice(0, 7);
+  screen({s:"diary", m});
+  const [y, mo] = m.split("-").map(Number);
+  const first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  const prevM = today(new Date(y, mo - 2, 1)).slice(0, 7), nextM = today(new Date(y, mo, 1)).slice(0, 7);
+  const firstKey = Object.keys(S.days).sort()[0];
+  let cells = "";
+  for(let i = 0; i < lead; i++) cells += "<span></span>";
+  for(let d = 1; d <= days; d++){
+    const k = m + "-" + String(d).padStart(2, "0"), r = S.days[k];
+    const cls = r && r.st === "done" ? "done" : r && (r.st === "skip" || k < t) ? "skip" : "none";
+    const lab = r && r.st === "done" ? "sfida fatta" : r && r.st === "skip" ? "non oggi" : "";
+    cells += `<span class="dd ${k === t ? "today" : ""}" ${lab ? `aria-label="${d}: ${lab}"` : ""}>${d}<i class="dot ${r ? cls : "none"}"></i></span>`;
+  }
+  const keys = Object.keys(S.days).filter(k => k.startsWith(m) && (S.days[k].st === "done" || S.days[k].st === "skip")).sort().reverse();
+  const doneN = keys.filter(k => S.days[k].st === "done").length;
+  const v = $(`<div class="pop">
+    <div class="page-h"><span class="label">Diario</span><h2>Le tue sfide</h2><p>${doneDays().length} completate finora. Solo tu le vedi.</p></div>
+    <div class="card">
+      <div class="cal-h">
+        <button class="icb" id="pm" aria-label="Mese precedente" ${firstKey && prevM < firstKey.slice(0, 7) ? "disabled" : ""}>${ICON.back}</button>
+        <h3>${esc(first.toLocaleDateString("it-IT", {month:"long", year:"numeric"}))}</h3>
+        <button class="icb" id="nm" aria-label="Mese successivo" ${nextM > t.slice(0, 7) ? "disabled" : ""}>${ICON.next}</button>
+      </div>
+      <div class="cal" aria-label="Calendario del mese: ${doneN} sfide fatte">${["L","M","M","G","V","S","D"].map(x => `<span class="wd" aria-hidden="true">${x}</span>`).join("")}${cells}</div>
+      <div class="legend"><span><i class="dot done"></i>Fatta</span><span><i class="dot skip"></i>Saltata o riposo</span></div>
+    </div>
+    <div class="acts" style="margin-bottom:8px"><button class="btn btn-ghost" id="recap">${ICON.star}Riepilogo della settimana</button></div>
+    <div class="sec-h"><h3>Questo mese</h3><span class="label">${doneN} fatte</span></div>
+    ${keys.length ? `<div class="card">${keys.map(k => { const r = S.days[k], c = chOf(r);
+      return r.st === "done" ? `<article class="entry">
+        <div class="eh"><span class="label">${esc(fmtDay(k, {weekday:"short", day:"numeric", month:"short"}))}</span>${r.mood ? `<span class="mface">${faceSvg(r.mood)}${esc(MOODS[r.mood])}</span>` : ""}</div>
+        <b>${esc(c.t)}</b>
+        <div class="tags"><span class="tag">${catIcon(c.c)}${esc(catName(c.c))}</span><span class="tag lv">${esc(LV[c.l].name)}</span>${r.plan ? `<span class="tag">${ICON.pin}${esc(r.plan)}</span>` : ""}</div>
+        ${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}
+      </article>` : `<article class="entry"><div class="eh"><span class="label">${esc(fmtDay(k, {weekday:"short", day:"numeric", month:"short"}))}</span></div><p class="small">${ICON.moon.replace("<svg", '<svg width="16" height="16" style="vertical-align:-3px"')} Giorno di riposo. Va bene così.</p></article>`; }).join("")}</div>`
+    : `<div class="card" style="text-align:center"><div class="react">${mascot("think", 90)}</div><p>Qui troverai le sfide fatte, con le tue note.</p><div class="acts"><button class="btn btn-deep" id="go">Vai alla sfida di oggi</button></div></div>`}
+  </div>`);
+  v.querySelector("#pm").onclick = () => diary(prevM);
+  v.querySelector("#nm").onclick = () => diary(nextM);
+  v.querySelector("#recap").onclick = recap;
+  const g = v.querySelector("#go"); if(g) g.onclick = home;
+  v.appendChild(tabBar("diary"));
+  mount(v);
+}
+
+/* ---------- RIEPILOGO DELLA SETTIMANA (assaporare) ---------- */
+function recap(){
+  screen({s:"recap"});
+  const t = today(); S.recapSeen = t; save();
+  const keys = Object.keys(S.days).filter(k => gap(k, t) < 7 && gap(k, t) >= 0 && S.days[k].st === "done").sort();
+  const rs = keys.map(k => S.days[k]);
+  const xp = rs.reduce((a, r) => a + (r.xp || 0), 0);
+  const best = keys.slice().sort((a, b) => (S.days[b].mood || 0) - (S.days[a].mood || 0) || (S.days[b].note ? 1 : 0) - (S.days[a].note ? 1 : 0)).slice(0, 3);
+  const cats = [...new Set(rs.map(r => r.c))];
+  const v = $(`<div class="pop">
+    ${backBtn("Indietro")}
+    <div class="page-h"><span class="label">Ultimi 7 giorni</span><h2>I tuoi momenti migliori</h2></div>
+    <div class="react">${mascot(rs.length ? "proud" : "gentle", 120)}</div>
+    <div class="kpis"><div class="kpi"><b>${rs.length}</b><span>sfide fatte</span></div><div class="kpi"><b>${xp}</b><span>XP guadagnati</span></div></div>
+    ${rs.length ? `<div class="card"><h3>Da ricordare</h3>${best.map(k => { const r = S.days[k];
+      return `<article class="entry"><div class="eh"><span class="label">${esc(fmtDay(k, {weekday:"long", day:"numeric"}))}</span>${r.mood ? `<span class="mface">${faceSvg(r.mood)}${esc(MOODS[r.mood])}</span>` : ""}</div><b>${esc(chOf(r).t)}</b>${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}</article>`; }).join("")}</div>
+      <div class="card"><p>Hai toccato ${cats.length} ${cats.length === 1 ? "categoria" : "categorie"}: ${esc(cats.map(catName).join(", "))}.</p><p>Prenditi un momento per rileggere: ricordare i successi li rende più forti.</p></div>`
+    : `<div class="card"><p>Questa settimana è stata tranquilla, e va bene così. La prossima sfida ti aspetta quando vuoi.</p></div>`}
+  </div>`);
+  v.querySelector("#bk").onclick = () => history.back();
+  mount(v);
+}
+
+/* ---------- PROGRESSI ---------- */
+function progress(){
+  screen({s:"progress"});
+  const xp = totalXp(), L = lvInfo(xp), st = streak(), ds = doneDays(), rs = ds.map(k => S.days[k]);
+  S.best = Math.max(S.best || 0, st.n);
+  const per = CATS.map(c => ({c, n:rs.filter(r => r.c === c.id).length}));
+  const max = Math.max(1, ...per.map(p => p.n));
+  const lvNow = S.diff === "auto" ? Math.min(3, Math.max(1, Math.round(S.lvl))) : 0;
+  const v = $(`<div class="pop">
+    <div class="page-h"><span class="label">Progressi</span><h2>${esc(L.name)}</h2><p>Livello ${L.n} · ${xp} XP in tutto</p></div>
+    <div class="card lvcard">
+      ${mascot(ds.length ? "proud" : "hi", 96)}
+      <div>
+        <div class="meter" role="progressbar" aria-label="Avanzamento del livello" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}"><i style="width:${Math.round(L.into / L.need * 100)}%"></i></div>
+        <p class="small" style="margin-top:6px">${L.into} di ${L.need} XP per il livello ${L.n + 1}</p>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b>${st.n}</b><span>giorni di fila</span></div>
+      <div class="kpi"><b>${S.best || 0}</b><span>serie migliore</span></div>
+      <div class="kpi"><b>${ds.length}</b><span>sfide fatte</span></div>
+      <div class="kpi"><b>${st.jolly ? "Usato" : "Pronto"}</b><span>jolly della settimana</span></div>
+    </div>
+    <div class="card">
+      <h3>Difficoltà</h3>
+      ${S.diff === "auto" ? `<div class="diffm" aria-label="Difficoltà attuale: ${esc(LV[lvNow].name)}">${[1,2,3].map(l => `<span class="${l === lvNow ? "on" : ""}">${LV[l].name}</span>`).join("")}</div>
+        <p class="small">Si adatta a te: se completi spesso sale un po', se salti torna più leggera.</p>`
+      : `<p class="small">Scegli tu: ${esc(S.levels.map(l => LV[l].name).join(", "))}. Puoi cambiarla nelle impostazioni.</p>`}
+    </div>
+    <div class="card">
+      <h3>Per categoria</h3>
+      <div class="bars">${per.map(p => `<div class="bar">${catIcon(p.c.id)}<div class="bt"><span>${esc(p.c.name)}</span><div class="meter" aria-hidden="true"><i style="width:${Math.round(p.n / max * 100)}%"></i></div></div><output aria-label="${esc(p.c.name)}: ${p.n}">${p.n}</output></div>`).join("")}</div>
+    </div>
+    <div class="sec-h"><h3>Traguardi</h3><span class="label">${Object.keys(S.badges).length} di ${BADGES.length}</span></div>
+    <div class="badges">${BADGES.map(b => { const got = S.badges[b.id];
+      return `<div class="badge ${got ? "" : "lock"}"><span class="bi">${got ? ICON[b.icon] : ICON.lock}</span><b>${esc(b.name)}</b><span>${got ? "Ottenuto il " + esc(fmtDay(got, {day:"numeric", month:"short"})) : esc(b.how)}</span></div>`; }).join("")}</div>
+    <div class="sec-h"><h3>Guardaroba di Ranocchia</h3><span class="label">${S.acc.length} di ${ACC.length}</span></div>
+    <p class="small" style="margin-bottom:10px">Gli accessori arrivano a sorpresa dopo le sfide. Tocca per farglieli indossare.</p>
+    <div class="wardrobe">
+      <button class="wb" data-w="" aria-pressed="${!S.wear}">${mascot("hi", 60, null)}Niente</button>
+      ${ACC.map(a => { const has = S.acc.includes(a.id);
+        return `<button class="wb" data-w="${a.id}" aria-pressed="${S.wear === a.id}" ${has ? "" : "disabled"}>${mascot("hi", 60, has ? a.id : null)}${has ? esc(a.name) : "Da scoprire"}</button>`; }).join("")}
+    </div>
+  </div>`);
+  v.querySelectorAll(".wb:not(:disabled)").forEach(b => b.onclick = () => { S.wear = b.dataset.w || null; save(); progress(); });
+  v.appendChild(tabBar("progress"));
+  mount(v);
+}
+
+/* ---------- IMPOSTAZIONI ---------- */
+function sw(id, on, label, sub){ return `<button class="switch" role="switch" aria-checked="${on}" id="${id}"><span>${label}${sub ? `<small>${sub}</small>` : ""}</span><span class="tr" aria-hidden="true"></span></button>`; }
+function settings(note){
+  screen({s:"settings"});
+  const th = activeTheme();
+  const notifOk = "Notification" in window;
+  const v = $(`<div class="pop">
+    <div class="page-h"><span class="label">Impostazioni</span><h2>A modo tuo</h2></div>
+
+    <div class="sec-h"><h3>Categorie</h3><span class="label">Almeno una</span></div>
+    <div class="opts" role="group" aria-label="Categorie attive">${CATS.map(c => `<button class="opt" data-cat="${c.id}" aria-pressed="${S.cats.includes(c.id)}">${catIcon(c.id)}${esc(c.name)}<span class="ck">${ICON.check}</span></button>`).join("")}</div>
+
+    <div class="sec-h"><h3>Difficoltà</h3></div>
+    <div class="opts" role="group" aria-label="Modo della difficoltà">
+      <button class="opt" data-diff="auto" aria-pressed="${S.diff === "auto"}">Si adatta a me</button>
+      <button class="opt" data-diff="manual" aria-pressed="${S.diff !== "auto"}">Scelgo io</button>
+    </div>
+    ${S.diff !== "auto" ? `<div class="opts" role="group" aria-label="Livelli ammessi" style="margin-top:10px">${[1,2,3].map(l => `<button class="opt" data-lv="${l}" aria-pressed="${S.levels.includes(l)}">${LV[l].name}<span class="ck">${ICON.check}</span></button>`).join("")}</div>` : `<p class="small" style="margin-top:8px">Se completi spesso arrivano sfide un po' più impegnative, se salti torna più leggera.</p>`}
+    <div class="stack" style="margin-top:14px">
+      ${sw("tog", S.together, "Sfide da fare con qualcuno", "Alcune sfide coinvolgono un amico o una persona cara")}
+    </div>
+    ${th ? `<div class="card" style="margin-top:14px"><p><b>${esc(THEMES[th.c])}</b> fino a ${esc(fmtDay(th.to))}.</p><div class="acts"><button class="btn btn-ghost" id="endth">Termina il tema</button></div></div>` : ""}
+
+    <div class="sec-h"><h3>Le mie sfide</h3><span class="label">${(S.custom || []).length}</span></div>
+    <button class="btn btn-ghost" id="mine">${ICON.plus}Aggiungi o modifica le tue sfide</button>
+
+    <div class="sec-h"><h3>Promemoria</h3></div>
+    <div class="field">
+      <label for="rem">Orario del promemoria</label>
+      <input class="in" type="time" id="rem" value="${esc(S.remind)}">
+      <span class="help">Un'app web non può svegliare il telefono da sola: il modo più affidabile è aggiungere un evento ricorrente al calendario. Il tono resta gentile, nessun richiamo se salti.</span>
+    </div>
+    <div class="stack">
+      <button class="btn btn-ghost" id="ics">${ICON.cal}Aggiungi al calendario</button>
+      ${notifOk ? sw("ntf", S.notif && Notification.permission === "granted", "Avviso quando l'app è aperta", "Se l'app è aperta in sottofondo all'orario scelto") : ""}
+    </div>
+
+    <div class="sec-h"><h3>Colori</h3><span class="label">Tocca per provarli</span></div>
+    <div class="pals">${PALETTES.map(p => `<button class="pal" data-id="${p.id}" aria-pressed="${p.id === S.palette}">
+        <span class="sw" style="background:${p.bg}"><i style="background:${p.deep}"></i><b>Aa</b></span>
+        <span class="pt2"><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("")}</div>
+
+    <div class="sec-h"><h3>I tuoi dati</h3></div>
+    <div class="stack">
+      <button class="btn btn-ghost" id="exp">${ICON.down}Esporta in JSON</button>
+      <label class="btn btn-ghost" for="imp">${ICON.up}Importa da JSON<input type="file" id="imp" accept="application/json,.json" class="sr"></label>
+      <p class="msg small" id="msg" role="status">${esc(note || "")}</p>
+      <button class="btn btn-danger" id="reset">${ICON.trash}Ricomincia da zero</button>
+    </div>
+    <p class="foot">${ICON.eye}<span>Tutto resta su questo dispositivo: niente account, niente server, niente statistiche inviate.</span></p>
+  </div>`);
+  v.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => {
+    const id = b.dataset.cat, on = S.cats.includes(id);
+    if(on && S.cats.length === 1){ toast("Tieni almeno una categoria attiva."); return; }
+    S.cats = on ? S.cats.filter(x => x !== id) : S.cats.concat(id);
+    refreshToday(); save(); settings();
+  });
+  v.querySelectorAll("[data-diff]").forEach(b => b.onclick = () => { S.diff = b.dataset.diff; save(); settings(); });
+  v.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => {
+    const l = Number(b.dataset.lv), on = S.levels.includes(l);
+    if(on && S.levels.length === 1){ toast("Tieni almeno un livello."); return; }
+    S.levels = on ? S.levels.filter(x => x !== l) : S.levels.concat(l).sort();
+    save(); settings();
+  });
+  v.querySelector("#tog").onclick = () => { S.together = !S.together; refreshToday(); save(); settings(); };
+  const e = v.querySelector("#endth"); if(e) e.onclick = () => { S.theme = null; save(); settings(); };
+  v.querySelector("#mine").onclick = mine;
+  v.querySelector("#rem").onchange = (ev) => { S.remind = ev.target.value || "18:30"; S.notified = null; save(); toast("Orario salvato."); };
+  v.querySelector("#ics").onclick = icsDownload;
+  const n = v.querySelector("#ntf");
+  if(n) n.onclick = () => {
+    if(S.notif && Notification.permission === "granted"){ S.notif = false; save(); settings(); return; }
+    Notification.requestPermission().then(p => { S.notif = p === "granted"; save(); settings(p === "granted" ? "Avviso attivo." : "Permesso non concesso: puoi usare il calendario."); }).catch(() => {});
+  };
+  v.querySelectorAll(".pal").forEach(b => b.onclick = () => { S.palette = b.dataset.id; save(); applyPalette(); settings(); });
+  v.querySelector("#exp").onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], {type:"application/json"}));
+    a.download = "ranocchia-backup-" + today() + ".json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    settings("File esportato.");
+  };
+  v.querySelector("#imp").onchange = (ev) => {
+    const f = ev.target.files[0]; if(!f) return;
+    f.text().then(txt => {
+      const d = JSON.parse(txt);
+      if(!d || typeof d !== "object" || typeof d.days !== "object") throw new Error("formato");
+      if(!confirm("Sostituire i dati di questo telefono con quelli del file?")) return settings();
+      S = Object.assign(fresh(), d); save(); applyPalette(); settings("Dati importati: " + Object.keys(S.days).length + " giorni.");
+    }).catch(() => settings("File non valido: non ho cambiato nulla."));
+  };
+  v.querySelector("#reset").onclick = () => {
+    if(!confirm("Cancellare tutte le sfide, le note e i progressi? Non si può annullare. Se vuoi, prima esporta i dati.")) return;
+    const pal = S.palette; S = fresh(); S.palette = pal; S.lastSeen = today(); save(); settings("Ripartito da zero.");
+  };
+  v.appendChild(tabBar("settings"));
+  mount(v);
+}
+// se la sfida di oggi non è ancora stata girata e non rispetta più le scelte, ne pesca un'altra
+function refreshToday(){
+  const t = today(), r = S.days[t];
+  if(r && r.st === "new"){ const c = chOf(r); if(!S.cats.includes(c.c) || (!S.together && c.i)) S.days[t] = newRec(draw([])); }
+}
+function icsDownload(){
+  const [hh, mm] = (S.remind || "18:30").split(":");
+  const d = today().replace(/-/g, ""), now = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const url = location.href.split("#")[0];
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Ranocchia//IT","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    "UID:ranocchia-promemoria-" + d + "@ranocchia","DTSTAMP:" + now, "DTSTART:" + d + "T" + hh + mm + "00", "DURATION:PT10M", "RRULE:FREQ=DAILY",
+    "SUMMARY:Ranocchia: la sfida di oggi", "DESCRIPTION:Una piccola sfida ti aspetta\\, quando ti va. " + url, "URL:" + url,
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Ranocchia","TRIGGER:PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics], {type:"text/calendar"}));
+  a.download = "ranocchia-promemoria.ics"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Apri il file per aggiungere il promemoria al calendario.");
+}
+
+/* ---------- LE MIE SFIDE ---------- */
+function mine(note){
+  screen({s:"mine"});
+  const list = S.custom || [];
+  const v = $(`<div class="pop">
+    ${backBtn("Impostazioni")}
+    <div class="page-h"><span class="label">Le mie sfide</span><h2>Inventane una</h2><p>Piccola, concreta, da 2 a 15 minuti. Entra nel mazzo con le altre.</p></div>
+    <form class="card" id="f" novalidate>
+      <div class="field"><label for="ft">Titolo *</label><input class="in" id="ft" maxlength="60" required aria-describedby="ft-e"><span class="err" id="ft-e"></span></div>
+      <div class="field"><label for="fd">Cosa fare, in una riga *</label><input class="in" id="fd" maxlength="140" required aria-describedby="fd-h fd-e"><span class="help" id="fd-h">Un'azione chiara: «Scrivi a…», non «Coltiva…».</span><span class="err" id="fd-e"></span></div>
+      <div class="field"><label for="fc">Categoria</label><select class="in" id="fc">${CATS.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="fl">Livello</label><select class="in" id="fl">${[1,2,3].map(l => `<option value="${l}">${LV[l].name}</option>`).join("")}</select></div>
+      <div class="field"><label for="fm">Minuti</label><input class="in" id="fm" type="number" inputmode="numeric" min="2" max="15" value="5" aria-describedby="fm-e"><span class="err" id="fm-e"></span></div>
+      <div class="stack" style="margin-bottom:14px">${sw("fi", false, "Da fare con qualcuno")}</div>
+      <button class="btn btn-deep" type="submit">${ICON.plus}Aggiungi al mazzo</button>
+      <p class="small" role="status" style="margin-top:8px">${esc(note || "")}</p>
+    </form>
+    <div class="sec-h"><h3>Nel mazzo</h3><span class="label">${list.length}</span></div>
+    ${list.length ? `<div class="card">${list.map(c => `<div class="mine"><div><b>${esc(c.t)}</b><span class="small">${esc(catName(c.c))} · ${LV[c.l].name} · ${c.m} min</span></div><button class="icb" data-del="${esc(c.id)}" aria-label="Elimina ${esc(c.t)}">${ICON.trash}</button></div>`).join("")}</div>`
+      : `<p class="small">Ancora nessuna. La prima ti fa guadagnare un traguardo.</p>`}
+  </div>`);
+  let together = false;
+  const fi = v.querySelector("#fi"); fi.onclick = (e) => { e.preventDefault(); together = !together; fi.setAttribute("aria-checked", together); };
+  const err = (id, msg) => { const el = v.querySelector("#" + id); el.setAttribute("aria-invalid", msg ? "true" : "false"); v.querySelector("#" + id + "-e").textContent = msg; return !msg; };
+  ["ft","fd","fm"].forEach(id => v.querySelector("#" + id).addEventListener("input", (e) => { if(e.target.getAttribute("aria-invalid") === "true") err(id, ""); }));
+  v.querySelector("#f").onsubmit = (e) => {
+    e.preventDefault();
+    const t = v.querySelector("#ft").value.trim(), d = v.querySelector("#fd").value.trim(), m = Math.round(Number(v.querySelector("#fm").value));
+    const a = err("ft", t ? "" : "Scrivi un titolo breve.");
+    const b = err("fd", d ? "" : "Scrivi cosa fare, in una riga.");
+    const c = err("fm", m >= 2 && m <= 15 ? "" : "Scegli un tempo da 2 a 15 minuti.");
+    if(!(a && b && c)){ v.querySelector('[aria-invalid="true"]').focus(); return; }
+    S.custom = list.concat({id:"u" + Date.now().toString(36), c:v.querySelector("#fc").value, l:Number(v.querySelector("#fl").value), o:999, t, d, m, w:"L'hai scelta tu: le sfide scelte in autonomia motivano di più.", i:together, own:true});
+    checkBadges(); save(); mine("Aggiunta! Potrà uscire nei prossimi giorni.");
+  };
+  v.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const c = list.find(x => x.id === b.dataset.del);
+    if(!c || !confirm("Eliminare la sfida «" + c.t + "»? Le note nel diario restano.")) return;
+    S.custom = list.filter(x => x.id !== c.id); save(); mine("Eliminata.");
+  });
+  v.querySelector("#bk").onclick = () => settings();
+  mount(v);
+}
+
+/* ---------- promemoria quando l'app è aperta ---------- */
+function reminderTick(){
+  try{
+    if(!S.notif || !("Notification" in window) || Notification.permission !== "granted") return;
+    const now = new Date(), t = today(), hm = String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+    const r = S.days[t];
+    if(hm < S.remind || S.notified === t || (r && (r.st === "done" || r.st === "skip"))) return;
+    S.notified = t; save();
+    const opt = {body:"La sfida di oggi ti aspetta, quando ti va.", icon:"icon-192.png", tag:"ranocchia"};
+    if(navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(reg => reg.showNotification("Ranocchia", opt));
+    else new Notification("Ranocchia", opt);
+  }catch(e){}
+}
+
+/* ---------- gesto indietro dal bordo (app installata su iPhone) ---------- */
+(function edgeSwipe(){
+  let x0 = null, y0 = 0; const arrow = document.createElement("div"); arrow.className = "edge"; arrow.innerHTML = ICON.back; document.body.appendChild(arrow);
+  addEventListener("touchstart", e => { const t = e.touches[0]; if(t.clientX < 24 && curDepth > 0){ x0 = t.clientX; y0 = t.clientY; } else x0 = null; }, {passive:true});
+  addEventListener("touchmove", e => { if(x0 === null) return; const dx = e.touches[0].clientX - x0; arrow.style.opacity = Math.min(1, dx / 70); arrow.style.transform = `translateX(${Math.min(dx, 80) - 20}px)`; }, {passive:true});
+  addEventListener("touchend", e => { if(x0 === null) return; const t = e.changedTouches[0]; arrow.style.opacity = 0;
+    if(t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60) history.back(); x0 = null; });
+})();
+
+/* ---------- avvio ---------- */
+(function start(){
+  const t = today();
+  if(S.lastSeen && S.lastSeen !== t){
+    const g = gap(S.lastSeen, t);
+    if(g >= 2){ sleepyOnce = true; S.lvl = Math.max(1, S.lvl - Math.min(.4, .1 * (g - 1))); }
+  }
+  S.lastSeen = t;
+  checkBadges(); save();
+})();
+applyPalette();
+try{ history.replaceState({s:"home"}, ""); }catch(e){}
+home();
+setInterval(reminderTick, 60000); reminderTick();
+let lastDay = today();
+document.addEventListener("visibilitychange", () => { if(!document.hidden && today() !== lastDay){ lastDay = today(); S.lastSeen = lastDay; save(); if(curDepth === 0) home(); } });
+window.APP = {mascot, PALETTES, CH, streak, draw, lvInfo, get S(){ return S; }, set S(v){ S = v; }, save, home, levelWeights};   // per scripts/icone.mjs e i test
+})();
+</script>
+<script>if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body></html>

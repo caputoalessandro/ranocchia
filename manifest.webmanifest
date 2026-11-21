@@ -1,0 +1,16 @@
+{
+  "name": "Ranocchia",
+  "short_name": "Ranocchia",
+  "description": "Una piccola sfida al giorno per uscire dalla zona di comfort, con una rana che cresce con te.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#C9E9C0",
+  "theme_color": "#C9E9C0",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
